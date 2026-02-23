@@ -31,7 +31,6 @@ public class DatabaseConfig {
 
     @Bean
     DataSource dataSource() throws JsonMappingException, JsonProcessingException {
-        System.out.println(secretName);
         // Fetch credentials from AWS Secrets Manager once
         String secret = secretsManagerUtils.getSecret(secretName);
 
@@ -45,8 +44,6 @@ public class DatabaseConfig {
         dataSource.setJdbcUrl(String.format("jdbc:mysql://%s:3306/%s", secretMap.get("rds_url"), secretMap.get("db_name")));
         dataSource.setUsername(secretMap.get("username").toString());
         dataSource.setPassword(secretMap.get("password").toString());
-
-        System.out.println(secretMap);
 
         return dataSource;
     }

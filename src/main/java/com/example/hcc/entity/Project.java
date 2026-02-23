@@ -1,5 +1,6 @@
 package com.example.hcc.entity;
 
+import com.example.hcc.auditing.AuditableEntity;
 import com.example.hcc.enums.ProjectType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -10,7 +11,7 @@ import lombok.Setter;
 @Table(name = "projects")
 @Getter
 @Setter
-public class Project {
+public class Project extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,10 +21,5 @@ public class Project {
 
     @Enumerated(EnumType.STRING)
     private ProjectType projectType;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    private User createdBy;
 }
 

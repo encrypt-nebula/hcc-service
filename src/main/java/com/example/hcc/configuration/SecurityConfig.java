@@ -23,8 +23,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers(HttpMethod.POST, "/users").permitAll()
                         .anyRequest()
-                       // .authenticated())
-                .permitAll())
+                       .authenticated())
+                //.permitAll())
                 .oauth2ResourceServer(
                         oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
