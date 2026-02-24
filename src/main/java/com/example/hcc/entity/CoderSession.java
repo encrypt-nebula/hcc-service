@@ -22,7 +22,10 @@ public class CoderSession {
     @Column(name = "coder_id")
     private Long coderId;
 
+    @Column(name = "started_at")
     private LocalDateTime startedAt;
+
+    @Column(name = "completed_at")
     private LocalDateTime completedAt;
 }
 

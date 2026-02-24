@@ -39,6 +39,14 @@ public class CodingResult {
     @Column(name = "source")
     private CodingSource codingSource;
 
+    @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 }
 

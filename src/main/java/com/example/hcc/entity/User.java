@@ -8,6 +8,8 @@ import lombok.Setter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -34,18 +36,20 @@ public class User{
     @Enumerated(EnumType.STRING)
     private Status status = Status.ACTIVE;
 
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
+
     @PrePersist
     @PreUpdate
-    private void hashPassword() {
-        if (password == null || password.isBlank()) {
-            return;
+    private void prePersistAndUpdate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
         }
 
-        if (password.startsWith("$2a$") || password.startsWith("$2b$")) {
-            return;
+        if (password != null && !password.isBlank() &&
+                !password.startsWith("$2a$") && !password.startsWith("$2b$")) {
+            this.password = PASSWORD_ENCODER.encode(this.password);
         }
-
-        this.password = PASSWORD_ENCODER.encode(this.password);
     }
 }
 

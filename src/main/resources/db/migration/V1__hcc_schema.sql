@@ -4,10 +4,18 @@ CREATE TABLE users (
     name VARCHAR(100),
     email VARCHAR(150) UNIQUE,
     password VARCHAR(255),
-    cognito_id BIGINT,
+    cognito_id VARCHAR(255),
     role VARCHAR(20),          -- ADMIN, TL, CODER
     status VARCHAR(20),        -- ACTIVE, INACTIVE
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+--Company
+CREATE TABLE company (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(150),
+    address VARCHAR(1000),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- PROJECTS
@@ -16,8 +24,10 @@ CREATE TABLE projects (
     project_name VARCHAR(150),
     project_type VARCHAR(20),  -- PROSPECTIVE, RETROSPECTIVE
     created_by BIGINT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    company_id BIGINT
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     FOREIGN KEY (created_by) REFERENCES users(id)
+    FOREIGN KEY (company_id) REFERENCES company(id)
 );
 
 -- FILES
@@ -28,7 +38,7 @@ CREATE TABLE files (
     s3_path VARCHAR(500),
     total_pages INT,
     upload_status VARCHAR(20), -- QUEUED, PROCESSED, FAILED
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     FOREIGN KEY (project_id) REFERENCES projects(id)
 );
 
@@ -41,7 +51,7 @@ CREATE TABLE patients (
     last_name VARCHAR(100),
     dob DATE,
     dos DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     FOREIGN KEY (project_id) REFERENCES projects(id),
     FOREIGN KEY (file_id) REFERENCES files(id)
 );
@@ -57,7 +67,7 @@ CREATE TABLE work_units (
     page_end INT NULL,
     status VARCHAR(30),        -- UNASSIGNED, ASSIGNED, IN_PROGRESS, COMPLETED
     assigned_to BIGINT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     FOREIGN KEY (project_id) REFERENCES projects(id),
     FOREIGN KEY (file_id) REFERENCES files(id),
     FOREIGN KEY (patient_id) REFERENCES patients(id),
@@ -97,7 +107,7 @@ CREATE TABLE coding_results (
     icd_code VARCHAR(20),
     hcc_score DECIMAL(5,3),
     source VARCHAR(10),        -- AI, MANUAL
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     FOREIGN KEY (work_unit_id) REFERENCES work_units(id),
     FOREIGN KEY (coder_id) REFERENCES users(id)
 );
