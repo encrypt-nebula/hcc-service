@@ -19,6 +19,12 @@ public class UserController {
         return service.create(user);
     }
 
+    // ✅ SUPER ADMIN ONLY
+    @PostMapping("/super-admin")
+    public User createBySuperAdmin(@RequestBody User user) {
+        return service.create(user);
+    }
+
     @GetMapping
     public List<User> all() {
         return service.getAll();

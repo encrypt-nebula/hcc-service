@@ -48,7 +48,6 @@ public class User{
 
         if (password != null && !password.isBlank() &&
                 !password.startsWith("$2a$") && !password.startsWith("$2b$")) {
-            this.password = PASSWORD_ENCODER.encode(this.password);
         }
     }
 }
