@@ -4,6 +4,7 @@ import com.example.hcc.enums.WorkUnitStatus;
 import com.example.hcc.enums.WorkUnitType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 @Table(name = "work_units")
 @Getter
 @Setter
+@Builder(toBuilder = true)
 public class WorkUnit {
 
     @Id
@@ -38,7 +40,7 @@ public class WorkUnit {
     private Integer pageEnd;
 
     @Enumerated(EnumType.STRING)
-    private WorkUnitStatus status = WorkUnitStatus.UNASSIGNED;
+    private WorkUnitStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})

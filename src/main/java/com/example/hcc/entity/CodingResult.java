@@ -2,6 +2,7 @@ package com.example.hcc.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,6 +14,7 @@ import java.util.List;
 @Table(name = "coding_results")
 @Getter
 @Setter
+@Builder(toBuilder = true)
 public class CodingResult {
 
     @Id
@@ -23,11 +25,6 @@ public class CodingResult {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     @JoinColumn(name = "work_unit_id")
     private WorkUnit workUnit;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    @JoinColumn(name = "coder_id")
-    private User coder;
 
     @Column(name = "extracted_icd_code")
     private List<String> extractedIcdCode;

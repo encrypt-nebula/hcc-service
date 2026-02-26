@@ -2,6 +2,7 @@ package com.example.hcc.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "patients")
 @Getter
 @Setter
+@Builder(toBuilder = true)
 public class Patient {
 
     @Id

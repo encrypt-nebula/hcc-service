@@ -40,7 +40,7 @@ CREATE TABLE files (
     file_name VARCHAR(255),
     s3_path VARCHAR(500),
     total_pages INT,
-    signature BOOLEAN NOT NULL DEFAULT FALSE,
+    signature VARCHAR(20),
     upload_status VARCHAR(20), -- QUEUED, PROCESSED, FAILED
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     FOREIGN KEY (project_id) REFERENCES projects(id)
@@ -108,12 +108,10 @@ CREATE TABLE hcc_scores (
 CREATE TABLE coding_results (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     work_unit_id BIGINT,
-    coder_id BIGINT,
     extracted_icd_code JSON,
     manual_icd_code JSON,
     ai_icd_code JSON,
     hcc_score DECIMAL(5,3),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     FOREIGN KEY (work_unit_id) REFERENCES work_units(id),
-    FOREIGN KEY (coder_id) REFERENCES users(id)
 );
