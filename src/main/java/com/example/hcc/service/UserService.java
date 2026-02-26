@@ -4,6 +4,7 @@ import com.example.hcc.cognito.AdminCreateUserRequestModel;
 import com.example.hcc.cognito.AdminDeleteUserRequestModel;
 import com.example.hcc.cognito.CognitoService;
 import com.example.hcc.entity.User;
+import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.mapper.UserMapper;
 import com.example.hcc.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +39,7 @@ public class UserService {
     }
 
     public User get(Long id) {
-        return repo.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     public User update(Long id, User user) {

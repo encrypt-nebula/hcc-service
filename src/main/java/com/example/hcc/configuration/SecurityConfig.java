@@ -24,8 +24,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers(HttpMethod.POST, "/users/super-admin")
                         .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/users")
-                        .hasRole("SUPER_ADMIN")
                         .anyRequest()
                        .authenticated())
                 //.permitAll())

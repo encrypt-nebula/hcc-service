@@ -6,8 +6,11 @@ CREATE TABLE users (
     password VARCHAR(255),
     cognito_id VARCHAR(255),
     role VARCHAR(20),          -- ADMIN, TL, CODER
-    status VARCHAR(20),        -- ACTIVE, INACTIVE
+    status VARCHAR(20), -- ACTIVE, INACTIVE
+    company_id BIGINT
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    FOREIGN KEY (company_id) REFERENCES company(id)
+
 );
 
 --Company
@@ -24,10 +27,10 @@ CREATE TABLE projects (
     project_name VARCHAR(150),
     project_type VARCHAR(20),  -- PROSPECTIVE, RETROSPECTIVE
     created_by BIGINT,
-    company_id BIGINT
+    credentials VARCHAR(150)
+    review_mode VARCHAR(150)
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     FOREIGN KEY (created_by) REFERENCES users(id)
-    FOREIGN KEY (company_id) REFERENCES company(id)
 );
 
 -- FILES

@@ -2,6 +2,7 @@ package com.example.hcc.service;
 
 import com.example.hcc.entity.WorkUnit;
 import com.example.hcc.enums.WorkUnitStatus;
+import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.WorkUnitRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class WorkUnitService {
     }
 
     public WorkUnit get(Long id) {
-        return repo.findById(id).orElseThrow(() -> new RuntimeException("WorkUnit not found"));
+        return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("WorkUnit not found"));
     }
 
     public WorkUnit update(Long id, WorkUnit workUnit) {
@@ -40,14 +41,15 @@ public class WorkUnitService {
 
     // TL assigns work units to coder
     @Transactional
-    public void assignToCoder(Long coderId, List<Long> workUnitIds) {
+    public String assignToCoder(Long coderId, List<Long> workUnitIds) {
         int updated = repo.assignWorkUnits(coderId, workUnitIds);
 
         if (updated == 0) {
             throw new RuntimeException("No work units assigned");
         }
-    }
 
+        return "Coder assigned successfully (" + updated + " work units)";
+    }
     // Coder fetches assigned work
     public List<WorkUnit> fetchAssignedWork(Long coderId) {
         return repo.findByAssignedToIdAndStatus(
@@ -66,7 +68,7 @@ public class WorkUnitService {
     // Mark work as completed
     public void completeWorkUnit(Long workUnitId) {
         WorkUnit wu = repo.findById(workUnitId)
-                .orElseThrow(() -> new RuntimeException("WorkUnit not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("WorkUnit not found"));
 
         wu.setStatus(WorkUnitStatus.COMPLETED);
         repo.save(wu);

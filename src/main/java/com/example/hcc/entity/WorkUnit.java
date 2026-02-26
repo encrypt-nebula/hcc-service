@@ -45,7 +45,7 @@ public class WorkUnit {
     @JoinColumn(name = "assigned_to")
     private User assignedTo;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
