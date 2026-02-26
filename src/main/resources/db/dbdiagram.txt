@@ -1,0 +1,96 @@
+// Use this in dbdiagram.io
+
+Table coding_results {
+  id bigint [pk, increment]
+  created_at datetime
+  hcc_score decimal
+  extracted_icd_code varchar
+  ai_suggested_icd_code varchar
+  manually_added_icd_code varchar
+  coder_id bigint
+  work_unit_id bigint
+}
+
+Table company {
+  id bigint [pk, increment]
+  address varchar
+  created_at datetime
+  name varchar
+}
+
+Table files {
+  id bigint [pk, increment]
+  created_at datetime
+  file_name varchar
+  s3_path varchar
+  total_pages int
+  signature bool
+  upload_status "enum('FAILED','PROCESSED','QUEUED')"
+  project_id bigint
+}
+
+Table icd_codes {
+  id bigint [pk, increment]
+  description varchar
+  icd_code varchar
+  hcc_score decimal
+}
+
+Table patients {
+  id bigint [pk, increment]
+  created_at datetime
+  dos date
+  dob date
+  first_name varchar
+  last_name varchar
+  file_id bigint
+  project_id bigint
+}
+
+Table projects {
+  id bigint [pk, increment]
+  created_at datetime
+  credentials varchar
+  project_name varchar
+  project_type "enum('PROSPECTIVE','RETROSPECTIVE')"
+  review_mode varchar
+  created_by bigint
+}
+
+Table users {
+  id bigint [pk, increment]
+  cognito_id varchar
+  created_at datetime
+  email varchar
+  name varchar
+  password varchar
+  role "enum('ADMIN','CODER','SUPER_ADMIN','TL')"
+  status "enum('ACTIVE','INACTIVE')"
+  company_id bigint
+}
+
+Table work_units {
+  id bigint [pk, increment]
+  created_at datetime
+  page_end int
+  page_start int
+  status "enum('ASSIGNED','COMPLETED','IN_PROGRESS','UNASSIGNED')"
+  type "enum('PAGE_RANGE','PATIENT')"
+  assigned_to bigint
+  file_id bigint
+  patient_id bigint
+  project_id bigint
+}
+
+// Relationships
+Ref: coding_results.coder_id > users.id
+Ref: coding_results.work_unit_id > work_units.id
+Ref: files.project_id > projects.id
+Ref: patients.project_id > projects.id
+Ref: patients.file_id > files.id
+Ref: projects.created_by > users.id
+Ref: users.company_id > company.id
+Ref: work_units.patient_id > patients.id
+Ref: work_units.project_id > projects.id
+Ref: work_units.file_id > files.id
+Ref: work_units.assigned_to > users.id
