@@ -1,6 +1,7 @@
 package com.example.hcc.service;
 
 import com.example.hcc.entity.CoderSession;
+import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.CoderSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class CoderSessionService {
 
     public CoderSession getById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("CoderSession not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("CoderSession not found"));
     }
 
     public CoderSession update(Long id, CoderSession session) {

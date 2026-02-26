@@ -1,6 +1,7 @@
 package com.example.hcc.service;
 
 import com.example.hcc.entity.FileRecord;
+import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.FileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,7 +22,7 @@ public class FileService {
     }
 
     public FileRecord get(Long id) {
-        return repo.findById(id).orElseThrow(() -> new RuntimeException("File not found"));
+        return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("File not found"));
     }
 
     public FileRecord update(Long id, FileRecord fileRecord) {

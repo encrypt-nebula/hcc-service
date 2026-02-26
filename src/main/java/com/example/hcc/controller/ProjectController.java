@@ -1,6 +1,8 @@
 package com.example.hcc.controller;
 
+import com.example.hcc.dto.ProjectResponse;
 import com.example.hcc.entity.Project;
+import com.example.hcc.mapper.ProjectMapper;
 import com.example.hcc.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -15,8 +17,9 @@ public class ProjectController {
     private final ProjectService service;
 
     @PostMapping
-    public Project create(@RequestBody Project project) {
-        return service.create(project);
+    public ProjectResponse create(@RequestBody Project project) {
+        Project saved = service.create(project);
+        return ProjectMapper.toResponse(saved);
     }
 
     @GetMapping
@@ -30,8 +33,9 @@ public class ProjectController {
     }
 
     @PutMapping("/{id}")
-    public Project update(@PathVariable Long id, @RequestBody Project project) {
-        return service.update(id, project);
+    public ProjectResponse update(@PathVariable Long id, @RequestBody Project project) {
+        Project update = service.update(id, project);
+        return ProjectMapper.toResponse(update);
     }
 
     @DeleteMapping("/{id}")

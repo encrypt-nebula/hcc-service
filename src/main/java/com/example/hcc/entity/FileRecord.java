@@ -31,7 +31,9 @@ public class FileRecord {
     @Enumerated(EnumType.STRING)
     private UploadStatus uploadStatus;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    private boolean signature = false;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @PrePersist

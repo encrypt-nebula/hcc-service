@@ -1,6 +1,7 @@
 package com.example.hcc.service;
 
 import com.example.hcc.entity.CodingResult;
+import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.CodingResultRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ public class CodingResultService {
     }
 
     public CodingResult get(Long id) {
-        return repo.findById(id).orElseThrow(() -> new RuntimeException("CodingResult not found"));
+        return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("CodingResult not found"));
     }
 
     public CodingResult update(Long id, CodingResult codingResult) {

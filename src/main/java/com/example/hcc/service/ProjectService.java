@@ -2,6 +2,7 @@ package com.example.hcc.service;
 
 import com.example.hcc.entity.Project;
 import com.example.hcc.entity.User;
+import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.ProjectRepository;
 import com.example.hcc.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class ProjectService {
     }
 
     public Project get(Long id) {
-        return repo.findById(id).orElseThrow(() -> new RuntimeException("Project not found"));
+        return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Project not found"));
     }
 
     public Project update(Long id, Project project) {

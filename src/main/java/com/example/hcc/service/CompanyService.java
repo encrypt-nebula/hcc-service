@@ -1,6 +1,7 @@
 package com.example.hcc.service;
 
 import com.example.hcc.entity.Company;
+import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.CompanyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,7 @@ public class CompanyService {
     }
 
     public Company get(Long id) {
-        return repo.findById(id).orElseThrow(() -> new RuntimeException("Company not found"));
+        return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Company not found"));
     }
 
     public Company update(Long id, Company company) {
