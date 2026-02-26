@@ -38,7 +38,7 @@ public class WorkUnit {
     private Integer pageEnd;
 
     @Enumerated(EnumType.STRING)
-    private WorkUnitStatus status;
+    private WorkUnitStatus status = WorkUnitStatus.UNASSIGNED;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})

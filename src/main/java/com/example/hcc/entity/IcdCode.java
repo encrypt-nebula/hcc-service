@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "icd_codes")
 @Getter
@@ -16,6 +18,9 @@ public class IcdCode {
 
     @Column(name = "icd_code")
     private String icdCode;
+
+    @Column(name = "hcc_score")
+    private BigDecimal hccScore;
 
     private String description;
 }

@@ -25,8 +25,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/users/super-admin")
                         .permitAll()
                         .anyRequest()
-                       .authenticated())
-                //.permitAll())
+//                       .authenticated())
+                .permitAll())
                 .oauth2ResourceServer(
                         oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 

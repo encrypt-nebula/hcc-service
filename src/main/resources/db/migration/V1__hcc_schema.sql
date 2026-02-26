@@ -40,6 +40,7 @@ CREATE TABLE files (
     file_name VARCHAR(255),
     s3_path VARCHAR(500),
     total_pages INT,
+    signature BOOLEAN NOT NULL DEFAULT FALSE,
     upload_status VARCHAR(20), -- QUEUED, PROCESSED, FAILED
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     FOREIGN KEY (project_id) REFERENCES projects(id)
@@ -92,6 +93,7 @@ CREATE TABLE coder_sessions (
 CREATE TABLE icd_codes (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     icd_code VARCHAR(20),
+    hcc_score DECIMAL(5,3)
     description TEXT
 );
 
@@ -107,9 +109,10 @@ CREATE TABLE coding_results (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     work_unit_id BIGINT,
     coder_id BIGINT,
-    icd_code VARCHAR(20),
+    extracted_icd_code JSON,
+    manual_icd_code JSON,
+    ai_icd_code JSON,
     hcc_score DECIMAL(5,3),
-    source VARCHAR(10),        -- AI, MANUAL
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     FOREIGN KEY (work_unit_id) REFERENCES work_units(id),
     FOREIGN KEY (coder_id) REFERENCES users(id)
