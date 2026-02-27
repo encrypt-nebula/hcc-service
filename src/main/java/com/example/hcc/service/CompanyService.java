@@ -3,6 +3,7 @@ package com.example.hcc.service;
 import com.example.hcc.entity.Company;
 import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.CompanyRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -43,5 +44,10 @@ public class CompanyService {
 
     public void delete(Long id) {
         repo.deleteById(id);
+    }
+
+    @Transactional
+    public int bulkDeactivate(List<Long> projectIds) {
+        return repo.markInactiveByIds(projectIds);
     }
 }

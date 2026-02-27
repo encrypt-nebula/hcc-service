@@ -1,10 +1,14 @@
 package com.example.hcc.controller;
 
+import com.example.hcc.dto.BulkDeactivateRequest;
+import com.example.hcc.dto.ExtractDataResponse;
 import com.example.hcc.dto.ProjectResponse;
 import com.example.hcc.entity.Project;
 import com.example.hcc.mapper.ProjectMapper;
 import com.example.hcc.service.ProjectService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -41,6 +45,18 @@ public class ProjectController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);
+    }
+
+    @PutMapping("/bulk-deactivate")
+    public ResponseEntity<?> bulkDeactivate(
+            @Valid @RequestBody BulkDeactivateRequest request) {
+
+        int deleted = service.bulkDeactivate(request.getIds());
+
+        return ResponseEntity.ok(
+                new ExtractDataResponse("SUCCESS",
+                        deleted + " projects deactived successfully")
+        );
     }
 }
 

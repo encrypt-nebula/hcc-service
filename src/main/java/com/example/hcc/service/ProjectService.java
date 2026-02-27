@@ -5,6 +5,7 @@ import com.example.hcc.entity.User;
 import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.ProjectRepository;
 import com.example.hcc.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -52,5 +53,10 @@ public class ProjectService {
 
     public void delete(Long id) {
         repo.deleteById(id);
+    }
+
+    @Transactional
+    public int bulkDeactivate(List<Long> projectIds) {
+        return repo.markInactiveByIds(projectIds);
     }
 }

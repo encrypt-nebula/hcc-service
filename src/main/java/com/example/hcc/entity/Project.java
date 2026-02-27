@@ -2,6 +2,7 @@ package com.example.hcc.entity;
 
 import com.example.hcc.auditing.AuditableEntity;
 import com.example.hcc.enums.ProjectType;
+import com.example.hcc.enums.Status;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,6 +28,9 @@ public class Project extends AuditableEntity {
 
     @Column(name = "review_mode")
     private String reviewMode;
+
+    @Enumerated(EnumType.STRING)
+    private Status status = Status.ACTIVE;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

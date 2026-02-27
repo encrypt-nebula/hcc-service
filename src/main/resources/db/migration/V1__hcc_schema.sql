@@ -18,6 +18,7 @@ CREATE TABLE company (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(150),
     address VARCHAR(1000),
+    status VARCHAR(20), -- ACTIVE, INACTIVE
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -29,6 +30,7 @@ CREATE TABLE projects (
     created_by BIGINT,
     credentials VARCHAR(150),
     review_mode VARCHAR(150),
+    status VARCHAR(20), -- ACTIVE, INACTIVE
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
