@@ -42,9 +42,36 @@ public class UserService {
         return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
-    public User update(Long id, User user) {
-        user.setId(id);
-        return repo.save(user);
+    public User update(Long id, User incoming) {
+
+        User existing = repo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (incoming.getName() != null) {
+            existing.setName(incoming.getName());
+        }
+
+        if (incoming.getEmail() != null) {
+            existing.setEmail(incoming.getEmail());
+        }
+
+        if (incoming.getPassword() != null && !incoming.getPassword().isBlank()) {
+            existing.setPassword(incoming.getPassword());
+        }
+
+        if (incoming.getRole() != null) {
+            existing.setRole(incoming.getRole());
+        }
+
+        if (incoming.getStatus() != null) {
+            existing.setStatus(incoming.getStatus());
+        }
+
+        if (incoming.getCompany() != null) {
+            existing.setCompany(incoming.getCompany());
+        }
+
+        return repo.save(existing);
     }
 
     public void delete(Long id) {

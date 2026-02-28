@@ -29,7 +29,7 @@ public class PatientController {
         return service.get(id);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public Patient update(@PathVariable Long id, @RequestBody Patient patient) {
         return service.update(id, patient);
     }
@@ -39,8 +39,8 @@ public class PatientController {
         service.delete(id);
     }
 
-    @GetMapping("/{fileId}")
-    public Patient getByFileId(@PathVariable Long id) {
+    @GetMapping("/fetch/{fileId}")
+    public Patient getByFileId(@PathVariable("fileId") Long id) {
         return service.getByFile(id);
     }
 }

@@ -31,7 +31,7 @@ public class WorkUnitController {
         return service.get(id);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public WorkUnit update(@PathVariable Long id, @RequestBody WorkUnit workUnit) {
         return service.update(id, workUnit);
     }

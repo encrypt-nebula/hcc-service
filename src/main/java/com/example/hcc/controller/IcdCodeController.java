@@ -29,7 +29,7 @@ public class IcdCodeController {
         return service.getById(id);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public IcdCode update(@PathVariable Long id,
                           @RequestBody IcdCode code) {
         return service.update(id, code);

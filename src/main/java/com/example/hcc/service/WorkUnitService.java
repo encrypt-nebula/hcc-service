@@ -28,11 +28,43 @@ public class WorkUnitService {
         return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("WorkUnit not found"));
     }
 
-    public WorkUnit update(Long id, WorkUnit workUnit) {
-        WorkUnit workUnitExisting = get(id);
-        workUnit.setStatus(workUnitExisting.getStatus());
-        workUnit.setId(id);
-        return repo.save(workUnit);
+    public WorkUnit update(Long id, WorkUnit incoming) {
+
+        WorkUnit existing = get(id);
+
+        if (incoming.getProject() != null) {
+            existing.setProject(incoming.getProject());
+        }
+
+        if (incoming.getFile() != null) {
+            existing.setFile(incoming.getFile());
+        }
+
+        if (incoming.getPatient() != null) {
+            existing.setPatient(incoming.getPatient());
+        }
+
+        if (incoming.getType() != null) {
+            existing.setType(incoming.getType());
+        }
+
+        if (incoming.getPageStart() != null) {
+            existing.setPageStart(incoming.getPageStart());
+        }
+
+        if (incoming.getPageEnd() != null) {
+            existing.setPageEnd(incoming.getPageEnd());
+        }
+
+        if (incoming.getStatus() != null) {
+            existing.setStatus(incoming.getStatus());
+        }
+
+        if (incoming.getAssignedTo() != null) {
+            existing.setAssignedTo(incoming.getAssignedTo());
+        }
+
+        return repo.save(existing);
     }
 
     public void delete(Long id) {

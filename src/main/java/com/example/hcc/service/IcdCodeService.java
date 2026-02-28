@@ -27,10 +27,22 @@ public class IcdCodeService {
                 .orElseThrow(() -> new ResourceNotFoundException("ICD Code not found"));
     }
 
-    public IcdCode update(Long id, IcdCode code) {
+    public IcdCode update(Long id, IcdCode incoming) {
+
         IcdCode existing = getById(id);
-        existing.setIcdCode(code.getIcdCode());
-        existing.setDescription(code.getDescription());
+
+        if (incoming.getIcdCode() != null) {
+            existing.setIcdCode(incoming.getIcdCode());
+        }
+
+        if (incoming.getHccScore() != null) {
+            existing.setHccScore(incoming.getHccScore());
+        }
+
+        if (incoming.getDescription() != null) {
+            existing.setDescription(incoming.getDescription());
+        }
+
         return repository.save(existing);
     }
 

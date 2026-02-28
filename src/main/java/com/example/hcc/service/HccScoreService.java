@@ -27,10 +27,18 @@ public class HccScoreService {
                 .orElseThrow(() -> new ResourceNotFoundException("HCC Score not found"));
     }
 
-    public HccScore update(Long id, HccScore score) {
+    public HccScore update(Long id, HccScore incoming) {
+
         HccScore existing = getById(id);
-        existing.setIcdCode(score.getIcdCode());
-        existing.setHccScore(score.getHccScore());
+
+        if (incoming.getIcdCode() != null) {
+            existing.setIcdCode(incoming.getIcdCode());
+        }
+
+        if (incoming.getHccScore() != null) {
+            existing.setHccScore(incoming.getHccScore());
+        }
+
         return repository.save(existing);
     }
 

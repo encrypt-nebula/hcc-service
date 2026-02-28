@@ -28,9 +28,32 @@ public class CodingResultService {
         return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("CodingResult not found"));
     }
 
-    public CodingResult update(Long id, CodingResult codingResult) {
-        codingResult.setId(id);
-        return repo.save(codingResult);
+    public CodingResult update(Long id, CodingResult incoming) {
+
+        CodingResult existing = repo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("CodingResult not found"));
+
+        if (incoming.getWorkUnit() != null) {
+            existing.setWorkUnit(incoming.getWorkUnit());
+        }
+
+        if (incoming.getExtractedIcdCode() != null) {
+            existing.setExtractedIcdCode(incoming.getExtractedIcdCode());
+        }
+
+        if (incoming.getManualIcdCode() != null) {
+            existing.setManualIcdCode(incoming.getManualIcdCode());
+        }
+
+        if (incoming.getAiIcdCode() != null) {
+            existing.setAiIcdCode(incoming.getAiIcdCode());
+        }
+
+        if (incoming.getHccScore() != null) {
+            existing.setHccScore(incoming.getHccScore());
+        }
+
+        return repo.save(existing);
     }
 
     public void delete(Long id) {
@@ -48,5 +71,9 @@ public class CodingResultService {
         }
         return rafScores;
 
+    }
+
+    public List<CodingResult> getByAssignedTo(Long userId) {
+        return repo.findByWorkUnit_AssignedTo_Id(userId);
     }
 }
