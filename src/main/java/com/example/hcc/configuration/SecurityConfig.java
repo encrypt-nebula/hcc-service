@@ -21,11 +21,10 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers(HttpMethod.POST, "/users/super-admin")
-                        .permitAll()
-                        .anyRequest()
-                       .authenticated())
-                //.permitAll())
+                        .requestMatchers(HttpMethod.POST, "/users/super-admin").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/extract-data").permitAll() // Whitelist for internal Lambda extraction results 
+                        .requestMatchers(HttpMethod.POST, "/users").hasRole("SUPER_ADMIN")
+                        .anyRequest().authenticated())
                 .oauth2ResourceServer(
                         oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
@@ -39,23 +38,9 @@ public class SecurityConfig {
         grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
 
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
-
-        // Uncomment for testing the granted authorities code
-        // jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwt -> {
-
-        // // Extract the authorities
-        // Collection<GrantedAuthority> authorities =
-        // grantedAuthoritiesConverter.convert(jwt);
-
-        // // Return the authorities
-        // return authorities;
-        // });
-
         jwtAuthenticationConverter.setPrincipalClaimName("sub");
 
         return jwtAuthenticationConverter;
     }
-
 }
