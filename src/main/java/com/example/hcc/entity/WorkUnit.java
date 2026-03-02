@@ -20,15 +20,15 @@ public class WorkUnit {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Project project;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private FileRecord file;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Patient patient;
 
     @Enumerated(EnumType.STRING)
@@ -41,11 +41,16 @@ public class WorkUnit {
     private WorkUnitStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @JoinColumn(name = "assigned_to")
     private User assignedTo;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    private Boolean monitor;
+    private Boolean evaluate;
+    private Boolean assessOrAddress;
+    private Boolean treat;
+
+    @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -55,4 +60,3 @@ public class WorkUnit {
         }
     }
 }
-

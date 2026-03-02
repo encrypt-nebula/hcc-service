@@ -26,5 +26,9 @@ public class DataExtractionDto {
         private String dos;
         private List<String> extractedIcdCodes;
         private List<String> aiSuggestedIcdCode;
+        private Boolean monitor;
+        private Boolean evaluate;
+        private Boolean assessOrAddress;
+        private Boolean treat;
     }
 }

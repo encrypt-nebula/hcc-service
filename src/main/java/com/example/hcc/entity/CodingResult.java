@@ -20,12 +20,12 @@ public class CodingResult {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @JoinColumn(name = "work_unit_id")
     private WorkUnit workUnit;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @JoinColumn(name = "coder_id")
     private User coder;
 
@@ -39,7 +39,7 @@ public class CodingResult {
     @Column(name = "source")
     private CodingSource codingSource;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -49,4 +49,3 @@ public class CodingResult {
         }
     }
 }
-

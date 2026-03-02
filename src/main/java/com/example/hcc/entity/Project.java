@@ -25,11 +25,11 @@ public class Project extends AuditableEntity {
     private ProjectType projectType;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @JoinColumn(name = "company_id")
     private Company company;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -39,4 +39,3 @@ public class Project extends AuditableEntity {
         }
     }
 }
-
