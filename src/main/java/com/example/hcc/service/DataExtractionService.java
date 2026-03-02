@@ -43,12 +43,8 @@ public class DataExtractionService {
         patient.setFile(fileRecord);
         patient.setFirstName(dto.getFirstName());
         patient.setLastName(dto.getLastName());
-        if (dto.getDob() != null && !dto.getDob().equalsIgnoreCase("Unknown")) {
-            patient.setDob(LocalDate.parse(dto.getDob()));
-        }
-        if (dto.getDos() != null && !dto.getDos().equalsIgnoreCase("Unknown")) {
-            patient.setDateOfService(LocalDate.parse(dto.getDos()));
-        }
+        patient.setDob(parseSafeDate(dto.getDob()));
+        patient.setDateOfService(parseSafeDate(dto.getDos()));
         patient = patientRepository.save(patient);
 
         // 4. Handle Encounter Details (Multiple DOS)
@@ -59,14 +55,24 @@ public class DataExtractionService {
                 workUnit.setProject(project);
                 workUnit.setFile(fileRecord);
                 workUnit.setPatient(patient);
-                workUnit.setType(dto.getWorkUnitType().equalsIgnoreCase("PATIENT") ? WorkUnitType.PATIENT : WorkUnitType.PAGE_RANGE);
+                workUnit.setType(dto.getWorkUnitType().equalsIgnoreCase("PATIENT") ? WorkUnitType.PATIENT
+                        : WorkUnitType.PAGE_RANGE);
                 workUnit.setStatus(WorkUnitStatus.UNASSIGNED);
+
+                // Map MEAT validation details
+                workUnit.setMonitor(detail.getMonitor());
+                workUnit.setEvaluate(detail.getEvaluate());
+                workUnit.setAssessOrAddress(detail.getAssessOrAddress());
+                workUnit.setTreat(detail.getTreat());
+
                 workUnit = workUnitRepository.save(workUnit);
 
                 // Save Coding Results for this WorkUnit
                 List<String> allCodes = new ArrayList<>();
-                if (detail.getExtractedIcdCodes() != null) allCodes.addAll(detail.getExtractedIcdCodes());
-                if (detail.getAiSuggestedIcdCode() != null) allCodes.addAll(detail.getAiSuggestedIcdCode());
+                if (detail.getExtractedIcdCodes() != null)
+                    allCodes.addAll(detail.getExtractedIcdCodes());
+                if (detail.getAiSuggestedIcdCode() != null)
+                    allCodes.addAll(detail.getAiSuggestedIcdCode());
 
                 for (String code : allCodes) {
                     CodingResult result = new CodingResult();
@@ -76,6 +82,18 @@ public class DataExtractionService {
                     codingResultRepository.save(result);
                 }
             }
+        }
+    }
+
+    private LocalDate parseSafeDate(String dateStr) {
+        if (dateStr == null || dateStr.equalsIgnoreCase("Unknown") || dateStr.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(dateStr);
+        } catch (Exception e) {
+            System.err.println("Failed to parse date: " + dateStr + ". Error: " + e.getMessage());
+            return null;
         }
     }
 }

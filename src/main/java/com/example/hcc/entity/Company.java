@@ -18,7 +18,7 @@ public class Company {
     private String name;
     private String address;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -29,4 +29,3 @@ public class Company {
     }
 
 }
-

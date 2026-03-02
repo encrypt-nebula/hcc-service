@@ -14,10 +14,9 @@ import java.time.LocalDateTime;
 @Table(name = "users")
 @Getter
 @Setter
-public class User{
+public class User {
 
-    private static final PasswordEncoder PASSWORD_ENCODER =
-            new BCryptPasswordEncoder();
+    private static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,7 +35,7 @@ public class User{
     @Enumerated(EnumType.STRING)
     private Status status = Status.ACTIVE;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -51,4 +50,3 @@ public class User{
         }
     }
 }
-
