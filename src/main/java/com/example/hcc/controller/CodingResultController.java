@@ -30,7 +30,7 @@ public class CodingResultController {
         return service.get(id);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public CodingResult update(@PathVariable Long id, @RequestBody CodingResult codingResult) {
         return service.update(id, codingResult);
     }
@@ -43,6 +43,11 @@ public class CodingResultController {
     @GetMapping("/raf-scores")
     public Map<Long, Double> getRafScores() {
         return service.getRafScores();
+    }
+
+    @GetMapping("/assigned-to/{coderId}")
+    public List<CodingResult> getByAssignedTo(@PathVariable Long coderId) {
+        return service.getByAssignedTo(coderId);
     }
 }
 

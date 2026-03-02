@@ -29,7 +29,7 @@ public class FileController {
         return service.get(id);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public FileRecord update(@PathVariable Long id, @RequestBody FileRecord fileRecord) {
         return service.update(id, fileRecord);
     }

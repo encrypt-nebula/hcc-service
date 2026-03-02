@@ -2,6 +2,7 @@ package com.example.hcc.entity;
 
 import com.example.hcc.enums.Role;
 import com.example.hcc.enums.Status;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -45,8 +46,11 @@ public class User {
             createdAt = LocalDateTime.now();
         }
 
-        if (password != null && !password.isBlank() &&
-                !password.startsWith("$2a$") && !password.startsWith("$2b$")) {
+        if (password != null && !password.isBlank()
+                && !password.startsWith("$2a$")
+                && !password.startsWith("$2b$")) {
+
+            password = PASSWORD_ENCODER.encode(password);
         }
     }
 }

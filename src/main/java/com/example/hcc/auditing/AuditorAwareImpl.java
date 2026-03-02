@@ -22,7 +22,6 @@ public class AuditorAwareImpl implements AuditorAware<User> {
 
     @Override
     public @NonNull Optional<User> getCurrentAuditor() {
-        System.out.println("test");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         String username = ((Jwt)(authentication.getPrincipal())).getClaim("username");

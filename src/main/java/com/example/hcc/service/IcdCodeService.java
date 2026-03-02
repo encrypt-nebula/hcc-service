@@ -1,6 +1,7 @@
 package com.example.hcc.service;
 
 import com.example.hcc.entity.IcdCode;
+import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.IcdCodeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,13 +24,25 @@ public class IcdCodeService {
 
     public IcdCode getById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("ICD Code not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("ICD Code not found"));
     }
 
-    public IcdCode update(Long id, IcdCode code) {
+    public IcdCode update(Long id, IcdCode incoming) {
+
         IcdCode existing = getById(id);
-        existing.setIcdCode(code.getIcdCode());
-        existing.setDescription(code.getDescription());
+
+        if (incoming.getIcdCode() != null) {
+            existing.setIcdCode(incoming.getIcdCode());
+        }
+
+        if (incoming.getHccScore() != null) {
+            existing.setHccScore(incoming.getHccScore());
+        }
+
+        if (incoming.getDescription() != null) {
+            existing.setDescription(incoming.getDescription());
+        }
+
         return repository.save(existing);
     }
 

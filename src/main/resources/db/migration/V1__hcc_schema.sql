@@ -6,8 +6,11 @@ CREATE TABLE users (
     password VARCHAR(255),
     cognito_id VARCHAR(255),
     role VARCHAR(20),          -- ADMIN, TL, CODER
-    status VARCHAR(20),        -- ACTIVE, INACTIVE
+    status VARCHAR(20), -- ACTIVE, INACTIVE
+    company_id BIGINT
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    FOREIGN KEY (company_id) REFERENCES company(id)
+
 );
 
 --Company
@@ -15,6 +18,7 @@ CREATE TABLE company (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(150),
     address VARCHAR(1000),
+    status VARCHAR(20), -- ACTIVE, INACTIVE
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -22,7 +26,7 @@ CREATE TABLE company (
 CREATE TABLE projects (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     project_name VARCHAR(150),
-    project_type VARCHAR(20),  -- PROSPECTIVE, RETROSPECTIVE
+    project_type VARCHAR(50),  -- PROSPECTIVE, RETROSPECTIVE
     created_by BIGINT,
     company_id BIGINT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -37,6 +41,7 @@ CREATE TABLE files (
     file_name VARCHAR(255),
     s3_path VARCHAR(500),
     total_pages INT,
+    signature VARCHAR(20),
     upload_status VARCHAR(20), -- QUEUED, PROCESSED, FAILED
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id)
@@ -93,6 +98,7 @@ CREATE TABLE coder_sessions (
 CREATE TABLE icd_codes (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     icd_code VARCHAR(20),
+    hcc_score DECIMAL(5,3)
     description TEXT
 );
 
@@ -107,11 +113,11 @@ CREATE TABLE hcc_scores (
 CREATE TABLE coding_results (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     work_unit_id BIGINT,
-    coder_id BIGINT,
-    icd_code VARCHAR(20),
+    extracted_icd_code JSON,
+    manual_icd_code JSON,
+    ai_icd_code JSON,
     hcc_score DECIMAL(5,3),
     source VARCHAR(10),        -- AI, MANUAL
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (work_unit_id) REFERENCES work_units(id),
-    FOREIGN KEY (coder_id) REFERENCES users(id)
 );

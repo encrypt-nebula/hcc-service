@@ -29,7 +29,7 @@ public class CoderSessionController {
         return service.getById(id);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public CoderSession update(@PathVariable Long id,
                                @RequestBody CoderSession session) {
         return service.update(id, session);
