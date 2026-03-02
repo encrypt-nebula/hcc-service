@@ -2,6 +2,7 @@ package com.example.hcc.service;
 
 import com.example.hcc.entity.WorkUnit;
 import com.example.hcc.enums.WorkUnitStatus;
+import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.WorkUnitRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -24,14 +25,46 @@ public class WorkUnitService {
     }
 
     public WorkUnit get(Long id) {
-        return repo.findById(id).orElseThrow(() -> new RuntimeException("WorkUnit not found"));
+        return repo.findById(id).orElseThrow(() -> new ResourceNotFoundException("WorkUnit not found"));
     }
 
-    public WorkUnit update(Long id, WorkUnit workUnit) {
-        WorkUnit workUnitExisting = get(id);
-        workUnit.setStatus(workUnitExisting.getStatus());
-        workUnit.setId(id);
-        return repo.save(workUnit);
+    public WorkUnit update(Long id, WorkUnit incoming) {
+
+        WorkUnit existing = get(id);
+
+        if (incoming.getProject() != null) {
+            existing.setProject(incoming.getProject());
+        }
+
+        if (incoming.getFile() != null) {
+            existing.setFile(incoming.getFile());
+        }
+
+        if (incoming.getPatient() != null) {
+            existing.setPatient(incoming.getPatient());
+        }
+
+        if (incoming.getType() != null) {
+            existing.setType(incoming.getType());
+        }
+
+        if (incoming.getPageStart() != null) {
+            existing.setPageStart(incoming.getPageStart());
+        }
+
+        if (incoming.getPageEnd() != null) {
+            existing.setPageEnd(incoming.getPageEnd());
+        }
+
+        if (incoming.getStatus() != null) {
+            existing.setStatus(incoming.getStatus());
+        }
+
+        if (incoming.getAssignedTo() != null) {
+            existing.setAssignedTo(incoming.getAssignedTo());
+        }
+
+        return repo.save(existing);
     }
 
     public void delete(Long id) {
@@ -40,14 +73,15 @@ public class WorkUnitService {
 
     // TL assigns work units to coder
     @Transactional
-    public void assignToCoder(Long coderId, List<Long> workUnitIds) {
+    public String assignToCoder(Long coderId, List<Long> workUnitIds) {
         int updated = repo.assignWorkUnits(coderId, workUnitIds);
 
         if (updated == 0) {
             throw new RuntimeException("No work units assigned");
         }
-    }
 
+        return "Coder assigned successfully (" + updated + " work units)";
+    }
     // Coder fetches assigned work
     public List<WorkUnit> fetchAssignedWork(Long coderId) {
         return repo.findByAssignedToIdAndStatus(
@@ -66,9 +100,13 @@ public class WorkUnitService {
     // Mark work as completed
     public void completeWorkUnit(Long workUnitId) {
         WorkUnit wu = repo.findById(workUnitId)
-                .orElseThrow(() -> new RuntimeException("WorkUnit not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("WorkUnit not found"));
 
         wu.setStatus(WorkUnitStatus.COMPLETED);
         repo.save(wu);
+    }
+
+    public List<WorkUnit> getByProjectId(Long projectId) {
+        return repo.findByProject_Id(projectId);
     }
 }

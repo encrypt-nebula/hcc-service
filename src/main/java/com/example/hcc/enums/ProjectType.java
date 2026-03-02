@@ -1,6 +1,6 @@
 package com.example.hcc.enums;
 
 public enum ProjectType {
-    PROSPECTIVE, RETROSPECTIVE
+    PROSPECTIVE, RETROPROSPECTIVE
 }
 

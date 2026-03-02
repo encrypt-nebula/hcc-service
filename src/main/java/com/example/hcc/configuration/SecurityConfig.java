@@ -1,6 +1,5 @@
 package com.example.hcc.configuration;
 
-import com.example.hcc.enums.Role;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

@@ -22,4 +22,11 @@ public interface WorkUnitRepository extends JpaRepository<WorkUnit, Long> {
             @Param("workUnitIds") List<Long> workUnitIds
     );
     List<WorkUnit> findByAssignedToIdAndStatus(Long coderId, WorkUnitStatus status);
+
+    void deleteByFile_Id(Long fileId);
+
+    List<WorkUnit> findByFile_Id(Long fileId);
+
+    List<WorkUnit> findByProject_Id(Long projectId);
+
 }

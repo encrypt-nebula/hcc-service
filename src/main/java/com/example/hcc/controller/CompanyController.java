@@ -1,8 +1,12 @@
 package com.example.hcc.controller;
 
+import com.example.hcc.dto.BulkStatusRequest;
+import com.example.hcc.dto.ExtractDataResponse;
 import com.example.hcc.entity.Company;
 import com.example.hcc.service.CompanyService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,7 +33,7 @@ public class CompanyController {
         return service.get(id);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public Company update(@PathVariable Long id, @RequestBody Company company) {
         return service.update(id, company);
     }
@@ -37,5 +41,22 @@ public class CompanyController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);
+    }
+
+    @PutMapping("/bulk-status-update")
+    public ResponseEntity<?> bulkStatusUpdate(
+            @Valid @RequestBody BulkStatusRequest request) {
+
+        int deleted = service.bulkStatusUpdate(request.getIds(), request.getStatus());
+
+        return ResponseEntity.ok(
+                new ExtractDataResponse("SUCCESS",
+                        deleted + " companies status updated successfully")
+        );
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<List<Company>> getAllActiveCompanies() {
+        return ResponseEntity.ok(service.getAllActiveCompanies());
     }
 }

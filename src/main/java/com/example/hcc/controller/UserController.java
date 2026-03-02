@@ -1,5 +1,6 @@
 package com.example.hcc.controller;
 
+import com.example.hcc.dto.UserResponseDto;
 import com.example.hcc.entity.User;
 import com.example.hcc.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +36,7 @@ public class UserController {
         return service.get(id);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public User update(@PathVariable Long id, @RequestBody User user) {
         return service.update(id, user);
     }
@@ -43,5 +44,10 @@ public class UserController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);
+    }
+
+    @GetMapping("/getCurrentUser")
+    public UserResponseDto me() {
+        return service.getUserByToken();
     }
 }

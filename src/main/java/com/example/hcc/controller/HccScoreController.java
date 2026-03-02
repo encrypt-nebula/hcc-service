@@ -29,7 +29,7 @@ public class HccScoreController {
         return service.getById(id);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public HccScore update(@PathVariable Long id,
                            @RequestBody HccScore score) {
         return service.update(id, score);

@@ -1,8 +1,10 @@
 package com.example.hcc.controller;
 
+import com.example.hcc.dto.AssignWorkUnitsRequest;
 import com.example.hcc.entity.WorkUnit;
 import com.example.hcc.service.WorkUnitService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,7 +31,7 @@ public class WorkUnitController {
         return service.get(id);
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public WorkUnit update(@PathVariable Long id, @RequestBody WorkUnit workUnit) {
         return service.update(id, workUnit);
     }
@@ -41,12 +43,12 @@ public class WorkUnitController {
 
     // 1️⃣ TL assigns work to coder
     @PostMapping("/assign")
-    public void assignWork(
+    public ResponseEntity<String> assignWork(
             @RequestParam Long coderId,
-            @RequestBody List<Long> workUnitIds) {
+            @RequestBody AssignWorkUnitsRequest assignWorkUnitsRequest) {
 
-        service.assignToCoder(coderId, workUnitIds);
-    }
+        String message = service.assignToCoder(coderId, assignWorkUnitsRequest.getWorkUnitIds());
+        return ResponseEntity.ok(message);    }
 
     // 2️⃣ Coder fetches assigned work
     @GetMapping("/assigned/{coderId}")
@@ -58,6 +60,11 @@ public class WorkUnitController {
     @PostMapping("/pick/{coderId}")
     public List<WorkUnit> pickWork(@PathVariable Long coderId) {
         return service.pickWork(coderId);
+    }
+
+    @GetMapping("/project/{projectId}")
+    public List<WorkUnit> getByProject(@PathVariable Long projectId) {
+        return service.getByProjectId(projectId);
     }
 }
 
