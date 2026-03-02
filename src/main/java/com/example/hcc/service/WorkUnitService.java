@@ -105,4 +105,8 @@ public class WorkUnitService {
         wu.setStatus(WorkUnitStatus.COMPLETED);
         repo.save(wu);
     }
+
+    public List<WorkUnit> getByProjectId(Long projectId) {
+        return repo.findByProject_Id(projectId);
+    }
 }

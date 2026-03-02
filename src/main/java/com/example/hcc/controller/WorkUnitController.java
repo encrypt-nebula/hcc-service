@@ -61,5 +61,10 @@ public class WorkUnitController {
     public List<WorkUnit> pickWork(@PathVariable Long coderId) {
         return service.pickWork(coderId);
     }
+
+    @GetMapping("/project/{projectId}")
+    public List<WorkUnit> getByProject(@PathVariable Long projectId) {
+        return service.getByProjectId(projectId);
+    }
 }
 
