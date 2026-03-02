@@ -3,12 +3,14 @@ package com.example.hcc.service;
 import com.example.hcc.cognito.AdminCreateUserRequestModel;
 import com.example.hcc.cognito.AdminDeleteUserRequestModel;
 import com.example.hcc.cognito.CognitoService;
+import com.example.hcc.dto.UserResponseDto;
 import com.example.hcc.entity.User;
 import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.mapper.UserMapper;
 import com.example.hcc.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,6 +22,9 @@ public class UserService {
     private final UserRepository repo;
     private final CognitoService cognitoService;
     private final UserMapper userMapper;
+    private final AuditorAware<User> auditorAware;
+    private final UserMapper responseMapper;
+
 
     public User create(User user) {
         AdminCreateUserRequestModel adminCreateUserRequestModel = userMapper.mapUserRequest(user);
@@ -76,6 +81,13 @@ public class UserService {
 
     public void delete(Long id) {
         repo.deleteById(id);
+    }
+
+    public UserResponseDto getUserByToken() {
+        User user = auditorAware.getCurrentAuditor()
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return responseMapper.toDto(user);
     }
 }
 

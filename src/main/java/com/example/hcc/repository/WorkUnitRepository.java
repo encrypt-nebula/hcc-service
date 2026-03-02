@@ -26,4 +26,7 @@ public interface WorkUnitRepository extends JpaRepository<WorkUnit, Long> {
     void deleteByFile_Id(Long fileId);
 
     List<WorkUnit> findByFile_Id(Long fileId);
+
+    List<WorkUnit> findByProject_Id(Long projectId);
+
 }
