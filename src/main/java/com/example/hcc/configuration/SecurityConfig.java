@@ -22,7 +22,11 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers(HttpMethod.POST, "/users/super-admin").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/extract-data").permitAll() // Whitelist for internal Lambda extraction results 
+                        .requestMatchers(HttpMethod.POST, "/extract-data").permitAll() // Whitelist for internal Lambda
+                                                                                       // extraction results
+                        .requestMatchers("/projects/**").permitAll()
+                        .requestMatchers("/users/**").permitAll()
+                        .requestMatchers("/companies/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users").hasRole("SUPER_ADMIN")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(

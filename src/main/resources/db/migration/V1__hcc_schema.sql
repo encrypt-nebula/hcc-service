@@ -28,11 +28,10 @@ CREATE TABLE projects (
     project_name VARCHAR(150),
     project_type VARCHAR(50),  -- PROSPECTIVE, RETROSPECTIVE
     created_by BIGINT,
-    credentials VARCHAR(150),
-    review_mode VARCHAR(150),
-    status VARCHAR(20), -- ACTIVE, INACTIVE
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    FOREIGN KEY (created_by) REFERENCES users(id)
+    company_id BIGINT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id),
+    FOREIGN KEY (company_id) REFERENCES company(id)
 );
 
 -- FILES
@@ -44,7 +43,7 @@ CREATE TABLE files (
     total_pages INT,
     signature VARCHAR(20),
     upload_status VARCHAR(20), -- QUEUED, PROCESSED, FAILED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id)
 );
 
@@ -57,7 +56,7 @@ CREATE TABLE patients (
     last_name VARCHAR(100),
     dob DATE,
     dos DATE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id),
     FOREIGN KEY (file_id) REFERENCES files(id)
 );
@@ -73,7 +72,11 @@ CREATE TABLE work_units (
     page_end INT NULL,
     status VARCHAR(30),        -- UNASSIGNED, ASSIGNED, IN_PROGRESS, COMPLETED
     assigned_to BIGINT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    monitor BOOLEAN DEFAULT FALSE,
+    evaluate BOOLEAN DEFAULT FALSE,
+    assess_or_address BOOLEAN DEFAULT FALSE,
+    treat BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id),
     FOREIGN KEY (file_id) REFERENCES files(id),
     FOREIGN KEY (patient_id) REFERENCES patients(id),
@@ -114,6 +117,7 @@ CREATE TABLE coding_results (
     manual_icd_code JSON,
     ai_icd_code JSON,
     hcc_score DECIMAL(5,3),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    source VARCHAR(10),        -- AI, MANUAL
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (work_unit_id) REFERENCES work_units(id),
 );

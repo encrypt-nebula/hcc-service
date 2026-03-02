@@ -24,15 +24,12 @@ public class Project extends AuditableEntity {
     @Enumerated(EnumType.STRING)
     private ProjectType projectType;
 
-    private String credentials;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+    @JoinColumn(name = "company_id")
+    private Company company;
 
-    @Column(name = "review_mode")
-    private String reviewMode;
-
-    @Enumerated(EnumType.STRING)
-    private Status status = Status.ACTIVE;
-
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -42,4 +39,3 @@ public class Project extends AuditableEntity {
         }
     }
 }
-

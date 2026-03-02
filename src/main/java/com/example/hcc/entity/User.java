@@ -15,10 +15,9 @@ import java.time.LocalDateTime;
 @Table(name = "users")
 @Getter
 @Setter
-public class User{
+public class User {
 
-    private static final PasswordEncoder PASSWORD_ENCODER =
-            new BCryptPasswordEncoder();
+    private static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,12 +36,7 @@ public class User{
     @Enumerated(EnumType.STRING)
     private Status status = Status.ACTIVE;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    @JoinColumn(name = "company_id")
-    private Company company;
-
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -60,4 +54,3 @@ public class User{
         }
     }
 }
-

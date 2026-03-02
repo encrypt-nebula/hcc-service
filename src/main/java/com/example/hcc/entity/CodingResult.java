@@ -22,12 +22,14 @@ public class CodingResult {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @JoinColumn(name = "work_unit_id")
     private WorkUnit workUnit;
 
-    @Column(name = "extracted_icd_code")
-    private List<String> extractedIcdCode;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+    @JoinColumn(name = "coder_id")
+    private User coder;
 
     @Column(name = "manual_icd_code")
     private List<String> manualIcdCode;
@@ -38,7 +40,11 @@ public class CodingResult {
     @Column(name = "hcc_score")
     private BigDecimal hccScore;
 
-    @Column(name = "created_at", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source")
+    private CodingSource codingSource;
+
+    @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -48,4 +54,3 @@ public class CodingResult {
         }
     }
 }
-

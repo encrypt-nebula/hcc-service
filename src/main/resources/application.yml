@@ -29,6 +29,3 @@ aws:
 internal:
   api-key: hcc-internal-secure-key-2026
 
-internal:
-  api-key: hcc-internal-secure-key-2026
-
