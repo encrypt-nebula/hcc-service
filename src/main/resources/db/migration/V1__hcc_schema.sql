@@ -26,8 +26,10 @@ CREATE TABLE company (
 CREATE TABLE projects (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     project_name VARCHAR(150),
-    project_type VARCHAR(50),  -- PROSPECTIVE, RETROSPECTIVE
+    project_type VARCHAR(150),  -- PROSPECTIVE, RETROSPECTIVE
     created_by BIGINT,
+    review_mode VARCHAR(150),
+    credentials VARCHAR(150)
     company_id BIGINT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id),
@@ -117,7 +119,6 @@ CREATE TABLE coding_results (
     manual_icd_code JSON,
     ai_icd_code JSON,
     hcc_score DECIMAL(5,3),
-    source VARCHAR(10),        -- AI, MANUAL
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (work_unit_id) REFERENCES work_units(id),
 );

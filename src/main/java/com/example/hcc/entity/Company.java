@@ -19,6 +19,9 @@ public class Company {
     private String name;
     private String address;
 
+    @Enumerated(EnumType.STRING)
+    private Status status = Status.ACTIVE;
+
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
