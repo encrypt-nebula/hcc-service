@@ -11,35 +11,33 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/extract-data-test")
+@RequestMapping("/extract-data-old")
 @RequiredArgsConstructor
 public class ExtractDataController {
 
-    private final ExtractDataService service;
-    private final ExtractDataDeleteService deleteService;
+        private final ExtractDataService service;
+        private final ExtractDataDeleteService deleteService;
 
-    @PostMapping
-    public ResponseEntity<ExtractDataResponse> extractData(
-            @Valid @RequestBody ExtractDataRequest request) {
+        @PostMapping
+        public ResponseEntity<ExtractDataResponse> extractData(
+                        @Valid @RequestBody ExtractDataRequest request) {
 
-        service.process(request);
+                service.process(request);
 
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(new ExtractDataResponse(
-                        "SUCCESS",
-                        "Data updated successfully"
-                ));
-    }
+                return ResponseEntity.status(HttpStatus.OK)
+                                .body(new ExtractDataResponse(
+                                                "SUCCESS",
+                                                "Data updated successfully"));
+        }
 
-    @DeleteMapping("/{fileId}")
-    public ResponseEntity<?> deleteExtractData(@PathVariable Long fileId) {
+        @DeleteMapping("/{fileId}")
+        public ResponseEntity<?> deleteExtractData(@PathVariable Long fileId) {
 
-        deleteService.deleteExtractData(fileId);
+                deleteService.deleteExtractData(fileId);
 
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(new ExtractDataResponse(
-                        "SUCCESS",
-                        "Data Deleted successfully"
-                ));
-    }
+                return ResponseEntity.status(HttpStatus.OK)
+                                .body(new ExtractDataResponse(
+                                                "SUCCESS",
+                                                "Data Deleted successfully"));
+        }
 }

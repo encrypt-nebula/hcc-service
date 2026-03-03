@@ -3,6 +3,7 @@ package com.example.hcc.entity;
 import com.example.hcc.auditing.AuditableEntity;
 import com.example.hcc.enums.ProjectType;
 import com.example.hcc.enums.Status;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,8 +33,16 @@ public class Project extends AuditableEntity {
     @Enumerated(EnumType.STRING)
     private Status status = Status.ACTIVE;
 
+    private String credentials;
+
+    @Column(name = "review_mode")
+    private String reviewMode;
+
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
+
+    @Enumerated(EnumType.STRING)
+    private Status status;
 
     @PrePersist
     public void prePersist() {
