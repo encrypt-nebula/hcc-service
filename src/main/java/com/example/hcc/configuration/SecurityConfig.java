@@ -24,6 +24,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/users/super-admin").permitAll()
                         .requestMatchers(HttpMethod.POST, "/extract-data").permitAll() // Whitelist for internal Lambda
                                                                                        // extraction results
+                        .requestMatchers(HttpMethod.PUT, "/api/files/status").permitAll()
                         .requestMatchers("/projects/**").permitAll()
                         .requestMatchers("/users/**").permitAll()
                         .requestMatchers("/companies/**").permitAll()

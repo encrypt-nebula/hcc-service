@@ -4,7 +4,6 @@ import com.example.hcc.enums.UploadStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-import software.amazon.awssdk.services.s3.endpoints.internal.Value;
 
 import java.time.LocalDateTime;
 
@@ -29,6 +28,9 @@ public class FileRecord {
 
     @Column(name = "s3_path")
     private String s3Path;
+
+    private String signature;
+
     private Integer totalPages;
 
     @Enumerated(EnumType.STRING)

@@ -1,6 +1,7 @@
 package com.example.hcc.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.example.hcc.enums.CodingSource;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -36,6 +37,12 @@ public class CodingResult {
 
     @Column(name = "ai_icd_code")
     private List<String> aiIcdCode;
+
+    @Column(name = "extracted_icd_code")
+    private List<String> extractedIcdCode;
+
+    @Column(name = "icd_code")
+    private String icdCode;
 
     @Column(name = "hcc_score")
     private BigDecimal hccScore;
