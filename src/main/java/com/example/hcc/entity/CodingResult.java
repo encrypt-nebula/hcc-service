@@ -47,10 +47,6 @@ public class CodingResult {
     @Column(name = "hcc_score")
     private BigDecimal hccScore;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "source")
-    private CodingSource codingSource;
-
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 

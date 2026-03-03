@@ -23,6 +23,9 @@ spring:
 db:
   secret:
     name: hcc/dev/db
+s3:
+  secret:
+    name: hcc/dev/s3/secrets
 
 aws:
   region: us-east-1
