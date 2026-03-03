@@ -74,13 +74,11 @@ public class DataExtractionService {
                 if (detail.getAiSuggestedIcdCode() != null)
                     allCodes.addAll(detail.getAiSuggestedIcdCode());
 
-                for (String code : allCodes) {
-                    CodingResult result = new CodingResult();
-                    result.setWorkUnit(workUnit);
-                    result.setIcdCode(code);
-                    result.setCodingSource(CodingSource.AI);
-                    codingResultRepository.save(result);
-                }
+                CodingResult result = new CodingResult();
+                result.setWorkUnit(workUnit);
+                result.setAiIcdCode(allCodes);
+                codingResultRepository.save(result);
+
             }
         }
     }

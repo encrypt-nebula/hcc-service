@@ -1,6 +1,5 @@
 package com.example.hcc.entity;
 
-import com.example.hcc.enums.CodingSource;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
@@ -38,12 +37,11 @@ public class CodingResult {
     @Column(name = "ai_icd_code")
     private List<String> aiIcdCode;
 
+    @Column(name = "extracted_icd_code")
+    private List<String> extractedIcdCode;
+
     @Column(name = "hcc_score")
     private BigDecimal hccScore;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "source")
-    private CodingSource codingSource;
 
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
