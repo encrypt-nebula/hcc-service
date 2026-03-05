@@ -9,8 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,12 +26,15 @@ public class DataExtractionService {
         Project project = projectRepository.findById(dto.getProjectId())
                 .orElseThrow(() -> new RuntimeException("Project not found with ID: " + dto.getProjectId()));
 
-        // 2. Save FileRecord
-        FileRecord fileRecord = new FileRecord();
+        // 2. Save/Update FileRecord
+        FileRecord fileRecord = fileRepository.findByS3Path(dto.getS3Path())
+                .orElse(new FileRecord());
+
         fileRecord.setProject(project);
         fileRecord.setFileName(dto.getFileName());
         fileRecord.setS3Path(dto.getS3Path());
         fileRecord.setTotalPages(dto.getTotalPages());
+        fileRecord.setSignature(dto.getSignature());
         fileRecord.setUploadStatus(UploadStatus.PROCESSED);
         fileRecord = fileRepository.save(fileRecord);
 
@@ -58,6 +59,7 @@ public class DataExtractionService {
                 workUnit.setType(dto.getWorkUnitType().equalsIgnoreCase("PATIENT") ? WorkUnitType.PATIENT
                         : WorkUnitType.PAGE_RANGE);
                 workUnit.setStatus(WorkUnitStatus.UNASSIGNED);
+                workUnit.setDateOfService(parseSafeDate(detail.getDos()));
 
                 // Map MEAT validation details
                 workUnit.setMonitor(detail.getMonitor());
@@ -87,6 +89,17 @@ public class DataExtractionService {
         if (dateStr == null || dateStr.equalsIgnoreCase("Unknown") || dateStr.isBlank()) {
             return null;
         }
+
+        // Try multiple formats
+        String[] formats = { "yyyy-MM-dd", "MM/dd/yyyy", "M/d/yyyy" };
+
+        for (String format : formats) {
+            try {
+                return LocalDate.parse(dateStr, java.time.format.DateTimeFormatter.ofPattern(format));
+            } catch (Exception ignored) {
+            }
+        }
+
         try {
             return LocalDate.parse(dateStr);
         } catch (Exception e) {

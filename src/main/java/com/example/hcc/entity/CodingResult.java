@@ -29,6 +29,14 @@ public class CodingResult {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+    @JoinColumn(name = "file_id")
+    private FileRecord file;
+
+    @Column(name = "dos")
+    private java.time.LocalDate dos;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @JoinColumn(name = "coder_id")
     private User coder;
 
@@ -40,9 +48,6 @@ public class CodingResult {
 
     @Column(name = "extracted_icd_code")
     private List<String> extractedIcdCode;
-
-    @Column(name = "icd_code")
-    private String icdCode;
 
     @Column(name = "hcc_score")
     private BigDecimal hccScore;

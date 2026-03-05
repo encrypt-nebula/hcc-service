@@ -42,6 +42,8 @@ public class WorkUnit {
     @Enumerated(EnumType.STRING)
     private WorkUnitStatus status;
 
+    private java.time.LocalDate dateOfService;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @JoinColumn(name = "assigned_to")

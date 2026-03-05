@@ -23,6 +23,8 @@ public class FileStatusController {
             @RequestHeader("X-Internal-Service-Key") String apiKey,
             @RequestBody FileStatusUpdateDto dto) {
 
+        System.out.println("Incoming File Status Payload: " + dto);
+
         if (!expectedApiKey.equals(apiKey)) {
             System.out.println(
                     "Unauthorized access attempt. Expected key: " + expectedApiKey + ", but received: " + apiKey);
