@@ -9,8 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -51,38 +49,73 @@ public class DataExtractionService {
         patient = patientRepository.save(patient);
 
         // 4. Handle Encounter Details (Multiple DOS)
-        if (dto.getDetails() != null) {
-            for (DataExtractionDto.EncounterDetailDto detail : dto.getDetails()) {
-                // For each unique DOS, create a WorkUnit
-                WorkUnit workUnit = new WorkUnit();
-                workUnit.setProject(project);
-                workUnit.setFile(fileRecord);
-                workUnit.setPatient(patient);
-                workUnit.setType(dto.getWorkUnitType().equalsIgnoreCase("PATIENT") ? WorkUnitType.PATIENT
-                        : WorkUnitType.PAGE_RANGE);
-                workUnit.setStatus(WorkUnitStatus.UNASSIGNED);
-                workUnit.setDateOfService(parseSafeDate(detail.getDos()));
+        if (project.getProjectType() == ProjectType.PROSPECTIVE) {
+            // PROSPECTIVE: Create exactly one WorkUnit for the entire file
+            WorkUnit workUnit = new WorkUnit();
+            workUnit.setProject(project);
+            workUnit.setFile(fileRecord);
+            workUnit.setPatient(patient);
+            workUnit.setType(WorkUnitType.PATIENT);
+            workUnit.setStatus(WorkUnitStatus.UNASSIGNED);
 
-                // Map MEAT validation details
-                workUnit.setMonitor(detail.getMonitor());
-                workUnit.setEvaluate(detail.getEvaluate());
-                workUnit.setAssessOrAddress(detail.getAssessOrAddress());
-                workUnit.setTreat(detail.getTreat());
+            if (dto.getDetails() != null && !dto.getDetails().isEmpty()) {
+                // Aggregate MEAT flags from all details (usually only one for prospective)
+                boolean monitor = false, evaluate = false, assess = false, treat = false;
+                for (DataExtractionDto.EncounterDetailDto detail : dto.getDetails()) {
+                    if (Boolean.TRUE.equals(detail.getMonitor()))
+                        monitor = true;
+                    if (Boolean.TRUE.equals(detail.getEvaluate()))
+                        evaluate = true;
+                    if (Boolean.TRUE.equals(detail.getAssessOrAddress()))
+                        assess = true;
+                    if (Boolean.TRUE.equals(detail.getTreat()))
+                        treat = true;
+                }
+                workUnit.setMonitor(monitor);
+                workUnit.setEvaluate(evaluate);
+                workUnit.setAssessOrAddress(assess);
+                workUnit.setTreat(treat);
+            }
+            workUnit = workUnitRepository.save(workUnit);
 
-                workUnit = workUnitRepository.save(workUnit);
+            // Create CodingResults for each detail entry, all linked to this single
+            // WorkUnit
+            if (dto.getDetails() != null) {
+                for (DataExtractionDto.EncounterDetailDto detail : dto.getDetails()) {
+                    CodingResult result = new CodingResult();
+                    result.setWorkUnit(workUnit);
+                    result.setFile(fileRecord);
+                    result.setDos(parseSafeDate(detail.getDos()));
+                    result.setExtractedIcdCode(detail.getExtractedIcdCodes());
+                    result.setAiIcdCode(detail.getAiSuggestedIcdCode());
+                    codingResultRepository.save(result);
+                }
+            }
+        } else {
+            // RETROPROSPECTIVE: Create one WorkUnit for each detail entry (each unique DOS)
+            if (dto.getDetails() != null) {
+                for (DataExtractionDto.EncounterDetailDto detail : dto.getDetails()) {
+                    WorkUnit workUnit = new WorkUnit();
+                    workUnit.setProject(project);
+                    workUnit.setFile(fileRecord);
+                    workUnit.setPatient(patient);
+                    workUnit.setType(WorkUnitType.PAGE_RANGE);
+                    workUnit.setStatus(WorkUnitStatus.UNASSIGNED);
 
-                // Save Coding Results for this WorkUnit
-                List<String> allCodes = new ArrayList<>();
-                if (detail.getExtractedIcdCodes() != null)
-                    allCodes.addAll(detail.getExtractedIcdCodes());
-                if (detail.getAiSuggestedIcdCode() != null)
-                    allCodes.addAll(detail.getAiSuggestedIcdCode());
+                    workUnit.setMonitor(detail.getMonitor());
+                    workUnit.setEvaluate(detail.getEvaluate());
+                    workUnit.setAssessOrAddress(detail.getAssessOrAddress());
+                    workUnit.setTreat(detail.getTreat());
+                    workUnit = workUnitRepository.save(workUnit);
 
-                CodingResult result = new CodingResult();
-                result.setWorkUnit(workUnit);
-                result.setAiIcdCode(allCodes);
-                codingResultRepository.save(result);
-
+                    CodingResult result = new CodingResult();
+                    result.setWorkUnit(workUnit);
+                    result.setFile(fileRecord);
+                    result.setDos(parseSafeDate(detail.getDos()));
+                    result.setExtractedIcdCode(detail.getExtractedIcdCodes());
+                    result.setAiIcdCode(detail.getAiSuggestedIcdCode());
+                    codingResultRepository.save(result);
+                }
             }
         }
     }

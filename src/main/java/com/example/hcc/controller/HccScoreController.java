@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import com.example.hcc.dto.HccScoreUpdateRequest;
+import com.example.hcc.entity.CodingResult;
+
 @RestController
 @RequestMapping("/hcc-scores")
 @RequiredArgsConstructor
@@ -15,8 +18,8 @@ public class HccScoreController {
     private final HccScoreService service;
 
     @PostMapping
-    public HccScore create(@RequestBody HccScore score) {
-        return service.create(score);
+    public CodingResult create(@RequestBody HccScoreUpdateRequest request) {
+        return service.updateCodingResultWithScores(request);
     }
 
     @GetMapping
@@ -31,7 +34,7 @@ public class HccScoreController {
 
     @PatchMapping("/{id}")
     public HccScore update(@PathVariable Long id,
-                           @RequestBody HccScore score) {
+            @RequestBody HccScore score) {
         return service.update(id, score);
     }
 
@@ -40,4 +43,3 @@ public class HccScoreController {
         service.delete(id);
     }
 }
-
