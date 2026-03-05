@@ -25,9 +25,6 @@ public class Company {
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
-    @Enumerated(EnumType.STRING)
-    private Status status;
-
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {

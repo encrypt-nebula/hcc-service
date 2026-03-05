@@ -33,16 +33,8 @@ public class Project extends AuditableEntity {
     @Enumerated(EnumType.STRING)
     private Status status = Status.ACTIVE;
 
-    private String credentials;
-
-    @Column(name = "review_mode")
-    private String reviewMode;
-
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
-
-    @Enumerated(EnumType.STRING)
-    private Status status;
 
     @PrePersist
     public void prePersist() {
