@@ -1,5 +1,6 @@
 package com.example.hcc.controller;
 
+import com.example.hcc.dto.IcdCodesRequest;
 import com.example.hcc.entity.IcdCode;
 import com.example.hcc.service.IcdCodeService;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,11 @@ public class IcdCodeController {
         return service.getByIcdCode(icdCode)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/codes")
+    public List<IcdCode> getByIcdCodes(@RequestBody IcdCodesRequest request) {
+        return service.getByIcdCodes(request.getIcdCodes());
     }
 }
 

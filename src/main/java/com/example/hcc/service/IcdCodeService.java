@@ -54,5 +54,9 @@ public class IcdCodeService {
     public Optional<IcdCode> getByIcdCode(String icdCode) {
         return repository.findByIcdCode(icdCode);
     }
+
+    public List<IcdCode> getByIcdCodes(List<String> icdCodes) {
+        return repository.findByIcdCodeIn(icdCodes);
+    }
 }
 
