@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +49,10 @@ public class IcdCodeService {
 
     public void delete(Long id) {
         repository.deleteById(id);
+    }
+
+    public Optional<IcdCode> getByIcdCode(String icdCode) {
+        return repository.findByIcdCode(icdCode);
     }
 }
 
