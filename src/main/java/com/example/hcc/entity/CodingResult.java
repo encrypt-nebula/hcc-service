@@ -49,6 +49,9 @@ public class CodingResult {
     @Column(name = "extracted_icd_code")
     private List<String> extractedIcdCode;
 
+    @Column(name = "submitted_icd_code")
+    private List<String> submittedIcdCode;
+
     @Column(name = "hcc_score")
     private BigDecimal hccScore;
 
