@@ -53,6 +53,10 @@ public class CodingResultService {
             existing.setHccScore(incoming.getHccScore());
         }
 
+        if (incoming.getSubmittedIcdCode() != null) {
+            existing.setSubmittedIcdCode(incoming.getSubmittedIcdCode());
+        }
+
         return repo.save(existing);
     }
 
