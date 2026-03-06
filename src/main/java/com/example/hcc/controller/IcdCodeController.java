@@ -3,6 +3,7 @@ package com.example.hcc.controller;
 import com.example.hcc.entity.IcdCode;
 import com.example.hcc.service.IcdCodeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,6 +39,13 @@ public class IcdCodeController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);
+    }
+
+    @GetMapping("/code/{icdCode}")
+    public ResponseEntity<IcdCode> getByIcdCode(@PathVariable String icdCode) {
+        return service.getByIcdCode(icdCode)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
 
