@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -36,13 +37,13 @@ public class WorkUnit {
     @Enumerated(EnumType.STRING)
     private WorkUnitType type;
 
-    private Integer pageStart;
-    private Integer pageEnd;
+    private String pageStart;
+    private String pageEnd;
 
     @Enumerated(EnumType.STRING)
     private WorkUnitStatus status;
 
-    private java.time.LocalDate dateOfService;
+    private LocalDate dateOfService;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })

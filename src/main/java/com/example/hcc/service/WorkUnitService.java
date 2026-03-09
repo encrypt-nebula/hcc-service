@@ -73,8 +73,8 @@ public class WorkUnitService {
 
     // TL assigns work units to coder
     @Transactional
-    public String assignToCoder(Long coderId, List<Long> workUnitIds) {
-        int updated = repo.assignWorkUnits(coderId, workUnitIds);
+    public String assignToCoder(Long coderId, List<Long> workUnitIds, String pageRange) {
+        int updated = repo.assignWorkUnits(coderId, workUnitIds, pageRange);
 
         if (updated == 0) {
             throw new RuntimeException("No work units assigned");

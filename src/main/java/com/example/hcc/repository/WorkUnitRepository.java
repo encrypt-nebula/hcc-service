@@ -14,12 +14,14 @@ public interface WorkUnitRepository extends JpaRepository<WorkUnit, Long> {
     @Query("""
         UPDATE WorkUnit w
         SET w.assignedTo.id = :coderId,
-            w.status = 'ASSIGNED'
+            w.status = 'ASSIGNED',
+            w.pageStart = :pageRange
         WHERE w.id IN :workUnitIds
     """)
     int assignWorkUnits(
             @Param("coderId") Long coderId,
-            @Param("workUnitIds") List<Long> workUnitIds
+            @Param("workUnitIds") List<Long> workUnitIds,
+            @Param("pageRange") String pageRange
     );
     List<WorkUnit> findByAssignedToIdAndStatus(Long coderId, WorkUnitStatus status);
 

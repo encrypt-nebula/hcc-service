@@ -9,4 +9,5 @@ import java.util.List;
 @Setter
 public class AssignWorkUnitsRequest {
     private List<Long> workUnitIds;
+    private String pageRange;
 }

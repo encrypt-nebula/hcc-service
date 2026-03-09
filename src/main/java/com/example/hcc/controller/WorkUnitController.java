@@ -47,7 +47,7 @@ public class WorkUnitController {
             @RequestParam Long coderId,
             @RequestBody AssignWorkUnitsRequest assignWorkUnitsRequest) {
 
-        String message = service.assignToCoder(coderId, assignWorkUnitsRequest.getWorkUnitIds());
+        String message = service.assignToCoder(coderId, assignWorkUnitsRequest.getWorkUnitIds(), assignWorkUnitsRequest.getPageRange());
         return ResponseEntity.ok(message);    }
 
     // 2️⃣ Coder fetches assigned work
