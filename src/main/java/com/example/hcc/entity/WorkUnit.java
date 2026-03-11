@@ -1,5 +1,6 @@
 package com.example.hcc.entity;
 
+import com.example.hcc.dto.UserResponse;
 import com.example.hcc.enums.WorkUnitStatus;
 import com.example.hcc.enums.WorkUnitType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -45,10 +46,8 @@ public class WorkUnit {
 
     private LocalDate dateOfService;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
-    @JoinColumn(name = "assigned_to")
-    private User assignedTo;
+    @Column(name = "assigned_to", columnDefinition = "JSON")
+    private String assignedTo;
 
     private Boolean monitor;
     private Boolean evaluate;
@@ -57,6 +56,9 @@ public class WorkUnit {
 
     @Column(name = "meat_validation", columnDefinition = "JSON")
     private String meatValidation;
+
+    @Column(name = "coder_page_range", columnDefinition = "JSON")
+    private String coderPageRange;
 
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;

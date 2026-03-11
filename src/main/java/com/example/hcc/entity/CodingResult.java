@@ -1,7 +1,6 @@
 package com.example.hcc.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.example.hcc.enums.CodingSource;
 import jakarta.persistence.*;
 import lombok.*;
 
