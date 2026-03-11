@@ -1,9 +1,12 @@
 package com.example.hcc.controller;
 
 import com.example.hcc.dto.AssignWorkUnitsRequest;
+import com.example.hcc.dto.FileWorkUnitsDTO;
+import com.example.hcc.dto.WorkUnitResponse;
 import com.example.hcc.entity.WorkUnit;
 import com.example.hcc.service.WorkUnitService;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.jdbc.Work;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,26 +48,15 @@ public class WorkUnitController {
     @PostMapping("/assign")
     public ResponseEntity<String> assignWork(
             @RequestParam Long coderId,
-            @RequestBody AssignWorkUnitsRequest assignWorkUnitsRequest) {
+            @RequestBody AssignWorkUnitsRequest request) {
 
-        String message = service.assignToCoder(coderId, assignWorkUnitsRequest.getWorkUnitIds(), assignWorkUnitsRequest.getPageRange());
-        return ResponseEntity.ok(message);    }
-
-    // 2️⃣ Coder fetches assigned work
-    @GetMapping("/assigned/{coderId}")
-    public List<WorkUnit> getAssignedWork(@PathVariable Long coderId) {
-        return service.fetchAssignedWork(coderId);
-    }
-
-    // 3️⃣ Coder picks work (ASSIGNED → IN_PROGRESS)
-    @PostMapping("/pick/{coderId}")
-    public List<WorkUnit> pickWork(@PathVariable Long coderId) {
-        return service.pickWork(coderId);
+        String message = service.assignToCoder(coderId, request.getPageRangeRequest());
+        return ResponseEntity.ok(message);
     }
 
     @GetMapping("/project/{projectId}")
-    public List<WorkUnit> getByProject(@PathVariable Long projectId) {
-        return service.getByProjectId(projectId);
+    public List<FileWorkUnitsDTO> getByProject(@PathVariable Long projectId) {
+        return service.getMergedWorkUnitsByProject(projectId);
     }
 }
 

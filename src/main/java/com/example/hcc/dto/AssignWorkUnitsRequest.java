@@ -8,6 +8,6 @@ import java.util.List;
 @Getter
 @Setter
 public class AssignWorkUnitsRequest {
-    private List<Long> workUnitIds;
-    private String pageRange;
+    private List<PageRangeRequest> pageRangeRequest;
+
 }

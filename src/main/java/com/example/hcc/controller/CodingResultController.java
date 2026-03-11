@@ -1,5 +1,6 @@
 package com.example.hcc.controller;
 
+import com.example.hcc.dto.FileCodingResultsDTO;
 import com.example.hcc.entity.CodingResult;
 import com.example.hcc.service.CodingResultService;
 import lombok.RequiredArgsConstructor;
@@ -46,8 +47,8 @@ public class CodingResultController {
     }
 
     @GetMapping("/assigned-to/{coderId}")
-    public List<CodingResult> getByAssignedTo(@PathVariable Long coderId) {
-        return service.getByAssignedTo(coderId);
+    public List<FileCodingResultsDTO> getByAssignedTo(@PathVariable Long coderId) {
+        return service.getMergedCodingResultsByCoder(coderId);
     }
 }
 

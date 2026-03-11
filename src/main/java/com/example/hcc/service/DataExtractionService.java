@@ -86,6 +86,8 @@ public class DataExtractionService {
                 workUnit.setEvaluate(evaluate);
                 workUnit.setAssessOrAddress(assess);
                 workUnit.setTreat(treat);
+                workUnit.setDateOfService(parseSafeDate(dto.getDos()));
+
 
                 // For PROSPECTIVE, we might want to aggregate meatValidation too, but for now
                 // just store the first one or a combined version if needed.
@@ -138,6 +140,8 @@ public class DataExtractionService {
                     workUnit.setAssessOrAddress(detail.getAssessOrAddress());
                     workUnit.setTreat(detail.getTreat());
                     workUnit.setMeatValidation(toJson(detail.getMeatValidation()));
+                    workUnit.setDateOfService(parseSafeDate(detail.getDos()));
+
                     workUnit = workUnitRepository.save(workUnit);
 
                     // Save MEAT Keywords
