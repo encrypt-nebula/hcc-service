@@ -1,5 +1,6 @@
 package com.example.hcc.dto;
 
+import com.example.hcc.entity.FileRecord;
 import com.example.hcc.entity.Patient;
 import com.example.hcc.entity.Project;
 import com.example.hcc.enums.WorkUnitStatus;
@@ -17,7 +18,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class FileWorkUnitsDTO {
-    private Long fileId;
+    private FileRecord fileRecord;
     private WorkUnitType type;
     private WorkUnitStatus status;
     private String assignedTo;

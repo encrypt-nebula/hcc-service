@@ -201,7 +201,7 @@ public class WorkUnitService {
                             .toList();
 
                     return FileWorkUnitsDTO.builder()
-                            .fileId(base.getFile().getId())
+                            .fileRecord(base.getFile())
                             .type(base.getType())
                             .status(base.getStatus())
                             .assignedTo(base.getAssignedTo())
