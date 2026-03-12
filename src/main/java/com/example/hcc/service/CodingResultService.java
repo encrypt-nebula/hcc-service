@@ -88,8 +88,16 @@ public class CodingResultService {
     public List<FileCodingResultsDTO> getMergedCodingResultsByCoder(Long coderId) {
 
         List<CodingResult> results = repo.findByAssignedToCoder(coderId);
+        return getMergedData(results);
+    }
 
-        // 2️⃣ Group by file
+    public List<FileCodingResultsDTO> getAllMergedCodingResult() {
+
+        List<CodingResult> results = repo.findAll();
+        return getMergedData(results);
+    }
+
+    private List<FileCodingResultsDTO> getMergedData(List<CodingResult> results) {
         Map<Long, List<CodingResult>> groupedByFile = results.stream()
                 .collect(Collectors.groupingBy(cr -> cr.getFile().getId()));
 

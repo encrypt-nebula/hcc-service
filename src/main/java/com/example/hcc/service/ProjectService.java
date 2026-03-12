@@ -8,6 +8,7 @@ import com.example.hcc.repository.ProjectRepository;
 import com.example.hcc.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,7 +16,10 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ProjectService {
+
     private final ProjectRepository repo;
+    private final AuditorAware<User> auditorAware;
+
 
     public Project create(Project project) {
         return repo.save(project);
@@ -63,5 +67,17 @@ public class ProjectService {
 
     public List<Project> getAllActiveCompanies() {
         return repo.findAllByStatus(Status.ACTIVE);
+    }
+
+    public List<Project> getProjectsByCurrentUserCompany() {
+
+        User user = auditorAware.getCurrentAuditor()
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (user.getCompany() == null) {
+            return repo.findAll();
+        }
+        Long companyId = user.getCompany().getId();
+
+        return repo.findByCreatedBy_Company_Id(companyId);
     }
 }

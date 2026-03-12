@@ -22,8 +22,8 @@ public class CodingResultController {
     }
 
     @GetMapping
-    public List<CodingResult> all() {
-        return service.getAll();
+    public List<FileCodingResultsDTO> all() {
+        return service.getAllMergedCodingResult();
     }
 
     @GetMapping("/{id}")
