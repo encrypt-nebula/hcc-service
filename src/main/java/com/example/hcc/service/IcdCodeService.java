@@ -58,5 +58,14 @@ public class IcdCodeService {
     public List<IcdCode> getByIcdCodes(List<String> icdCodes) {
         return repository.findByIcdCodeIn(icdCodes);
     }
-}
 
+    public List<String> validateCodes(List<String> queries) {
+        if (queries == null || queries.isEmpty()) {
+            return List.of();
+        }
+        return queries.stream()
+                .flatMap(query -> repository.findValidCodesByQuery(query).stream())
+                .distinct()
+                .toList();
+    }
+}

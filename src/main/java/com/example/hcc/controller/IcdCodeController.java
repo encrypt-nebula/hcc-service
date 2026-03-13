@@ -33,7 +33,7 @@ public class IcdCodeController {
 
     @PatchMapping("/{id}")
     public IcdCode update(@PathVariable Long id,
-                          @RequestBody IcdCode code) {
+            @RequestBody IcdCode code) {
         return service.update(id, code);
     }
 
@@ -53,5 +53,11 @@ public class IcdCodeController {
     public List<IcdCode> getByIcdCodes(@RequestBody IcdCodesRequest request) {
         return service.getByIcdCodes(request.getIcdCodes());
     }
-}
 
+    @PostMapping("/validate")
+    public com.example.hcc.dto.IcdValidationResponse validateCodes(
+            @RequestBody com.example.hcc.dto.IcdValidationRequest request) {
+        return new com.example.hcc.dto.IcdValidationResponse(
+                service.validateCodes(request.getQueries()));
+    }
+}
