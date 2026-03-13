@@ -36,4 +36,12 @@ public class FileStatusService {
 
         repository.save(status);
     }
+
+    @Transactional(readOnly = true)
+    public java.util.List<FileProcessingStatus> getStatuses(Integer projectId) {
+        if (projectId != null) {
+            return repository.findByProjectId(projectId);
+        }
+        return repository.findAll();
+    }
 }

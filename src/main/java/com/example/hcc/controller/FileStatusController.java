@@ -39,4 +39,15 @@ public class FileStatusController {
                     .body("Error updating file status: " + e.getMessage());
         }
     }
+
+    @GetMapping
+    public ResponseEntity<?> getFileStatuses(
+            @RequestParam(value = "projectId", required = false) Integer projectId) {
+        try {
+            return ResponseEntity.ok(fileStatusService.getStatuses(projectId));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching file statuses: " + e.getMessage());
+        }
+    }
 }
