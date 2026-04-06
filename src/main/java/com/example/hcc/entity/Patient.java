@@ -41,6 +41,12 @@ public class Patient {
     @Column(name = "dos")
     private LocalDate dateOfService;
 
+    @Column(name = "hcin_number")
+    private String hcinNumber;
+
+    @Column(name = "member_id")
+    private String memberId;
+
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
