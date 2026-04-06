@@ -22,13 +22,8 @@ public class FileWorkUnitsDTO {
     private WorkUnitType type;
     private WorkUnitStatus status;
     private String assignedTo;
-    private Boolean monitor;
-    private Boolean evaluate;
-    private Boolean assessOrAddress;
-    private Boolean treat;
     private String pageStart;
     private String pageEnd;
-    private String meatValidation;
     private String coderPageRange;
     private LocalDateTime createdAt;
     private Project project;

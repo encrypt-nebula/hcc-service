@@ -49,13 +49,6 @@ public class WorkUnit {
     @Column(name = "assigned_to", columnDefinition = "JSON")
     private String assignedTo;
 
-    private Boolean monitor;
-    private Boolean evaluate;
-    private Boolean assessOrAddress;
-    private Boolean treat;
-
-    @Column(name = "meat_validation", columnDefinition = "JSON")
-    private String meatValidation;
 
     @Column(name = "coder_page_range", columnDefinition = "JSON")
     private String coderPageRange;

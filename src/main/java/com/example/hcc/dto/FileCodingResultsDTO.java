@@ -17,7 +17,6 @@ public class FileCodingResultsDTO {
     private FileRecord fileRecord;
     private WorkUnit workUnit; // common for all
     private User coder;        // common
-    private String meatValidation; // common
     private LocalDateTime createdAt; // common
     private BigDecimal hccScore;
     private List<CodingResultMergeDTO> codingResults; // different columns merged

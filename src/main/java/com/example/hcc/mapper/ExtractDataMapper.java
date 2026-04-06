@@ -7,6 +7,11 @@ import com.example.hcc.enums.WorkUnitStatus;
 import com.example.hcc.enums.WorkUnitType;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 @Component
 public class ExtractDataMapper {
 
@@ -55,7 +60,28 @@ public class ExtractDataMapper {
         return CodingResult.builder()
                 .workUnit(workUnit)
                 .extractedIcdCode(detail.getExtractedIcdCodes())
-                .aiIcdCode(detail.getAiSuggestedIcdCode())
+                .aiIcdCode(deduplicateAiCodes(detail.getExtractedIcdCodes(), detail.getAiSuggestedIcdCode()))
                 .build();
+    }
+
+    /**
+     * Removes any ICD codes from the AI suggested list that are already present
+     * in the extracted ICD codes list.
+     */
+    private List<String> deduplicateAiCodes(List<String> extractedCodes, List<String> aiSuggestedCodes) {
+        if (aiSuggestedCodes == null || aiSuggestedCodes.isEmpty()) {
+            return aiSuggestedCodes;
+        }
+        if (extractedCodes == null || extractedCodes.isEmpty()) {
+            return aiSuggestedCodes;
+        }
+        Set<String> extractedSet = new HashSet<>(extractedCodes);
+        List<String> deduplicated = new ArrayList<>();
+        for (String code : aiSuggestedCodes) {
+            if (!extractedSet.contains(code)) {
+                deduplicated.add(code);
+            }
+        }
+        return deduplicated;
     }
 }

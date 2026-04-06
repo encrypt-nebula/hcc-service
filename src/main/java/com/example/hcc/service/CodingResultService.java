@@ -124,9 +124,8 @@ public class CodingResultService {
                             .fileRecord(base.getFile())
                             .workUnit(base.getWorkUnit())
                             .coder(base.getCoder())
-                            .meatValidation(base.getMeatValidation())
                             .createdAt(base.getCreatedAt())
-                            .hccScore(base.getHccScore()) // if different per row, can compute average/sum
+                            .hccScore(base.getHccScore())
                             .codingResults(mergedList)
                             .build();
                 })
