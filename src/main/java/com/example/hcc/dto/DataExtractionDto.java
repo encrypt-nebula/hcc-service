@@ -2,7 +2,6 @@ package com.example.hcc.dto;
 
 import lombok.Data;
 import java.util.List;
-import java.util.Map;
 
 @Data
 public class DataExtractionDto {
@@ -20,6 +19,8 @@ public class DataExtractionDto {
     private Long projectId;
     private String workUnitType;
     private Long workId;
+    private String hcinNumber;
+    private String memberId;
     private List<EncounterDetailDto> details;
     private String dbStatus;
 
@@ -28,20 +29,5 @@ public class DataExtractionDto {
         private String dos;
         private List<String> extractedIcdCodes;
         private List<String> aiSuggestedIcdCode;
-        private Boolean monitor;
-        private Boolean evaluate;
-        private Boolean assessOrAddress;
-        private Boolean treat;
-        private List<String> monitoringKeywords;
-        private List<String> evaluationKeywords;
-        private List<String> assessmentKeywords;
-        private List<String> treatmentKeywords;
-        private Map<String, MeatValidationDto> meatValidation;
-    }
-
-    @Data
-    public static class MeatValidationDto {
-        private List<String> keywords;
-        private Double weight;
     }
 }
