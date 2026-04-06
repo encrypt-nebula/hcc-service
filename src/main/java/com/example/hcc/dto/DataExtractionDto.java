@@ -21,6 +21,8 @@ public class DataExtractionDto {
     private Long workId;
     private String hcinNumber;
     private String memberId;
+    private String physicianName;
+    private String signedAt;
     private List<EncounterDetailDto> details;
     private String dbStatus;
 
