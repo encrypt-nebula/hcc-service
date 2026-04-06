@@ -47,6 +47,12 @@ public class Patient {
     @Column(name = "member_id")
     private String memberId;
 
+    @Column(name = "physician_name")
+    private String physicianName;
+
+    @Column(name = "signed_at")
+    private LocalDate signedAt;
+
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
