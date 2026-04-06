@@ -2,95 +2,145 @@
 
 Table coding_results {
   id bigint [pk, increment]
-  created_at datetime
-  hcc_score decimal
-  extracted_icd_code varchar
-  ai_suggested_icd_code varchar
-  manually_added_icd_code varchar
-  coder_id bigint
   work_unit_id bigint
+  file_id bigint
+  dos date
+  coder_id bigint
+  extracted_icd_code json
+  manual_icd_code json
+  ai_icd_code json
+  submitted_icd_code json
+  hcc_score decimal
+  created_at timestamp
 }
 
 Table company {
   id bigint [pk, increment]
-  address varchar
-  created_at datetime
   name varchar
+  address varchar
+  status varchar
+  created_at timestamp
 }
 
 Table files {
   id bigint [pk, increment]
-  created_at datetime
+  project_id bigint
   file_name varchar
   s3_path varchar
   total_pages int
-  signature bool
-  upload_status "enum('FAILED','PROCESSED','QUEUED')"
-  project_id bigint
+  signature varchar
+  upload_status "enum('FAILED','PROCESSED','QUEUED','PROCESSING')"
+  created_at timestamp
 }
 
 Table icd_codes {
   id bigint [pk, increment]
-  description varchar
+  icd_code varchar
+  hcc_score decimal
+  description text
+}
+
+Table hcc_scores {
+  id bigint [pk, increment]
   icd_code varchar
   hcc_score decimal
 }
 
 Table patients {
   id bigint [pk, increment]
-  created_at datetime
-  dos date
-  dob date
+  project_id bigint
+  file_id bigint
   first_name varchar
   last_name varchar
-  file_id bigint
-  project_id bigint
+  dob date
+  dos date
+  hcin_number varchar
+  member_id varchar
+  physician_name varchar
+  signed_at date
+  created_at timestamp
 }
 
 Table projects {
   id bigint [pk, increment]
-  created_at datetime
-  credentials varchar
   project_name varchar
-  project_type "enum('PROSPECTIVE','RETROSPECTIVE')"
-  review_mode varchar
+  project_type "enum('PROSPECTIVE','RETROPROSPECTIVE')"
   created_by bigint
+  review_mode varchar
+  credentials varchar
+  company_id bigint
+  status varchar
+  created_at timestamp
 }
 
 Table users {
   id bigint [pk, increment]
-  cognito_id varchar
-  created_at datetime
-  email varchar
   name varchar
+  email varchar
   password varchar
+  cognito_id varchar
   role "enum('ADMIN','CODER','SUPER_ADMIN','TL')"
   status "enum('ACTIVE','INACTIVE')"
   company_id bigint
+  created_at timestamp
 }
 
 Table work_units {
   id bigint [pk, increment]
-  created_at datetime
-  page_end int
-  page_start int
-  status "enum('ASSIGNED','COMPLETED','IN_PROGRESS','UNASSIGNED')"
-  type "enum('PAGE_RANGE','PATIENT')"
-  assigned_to bigint
+  project_id bigint
   file_id bigint
   patient_id bigint
-  project_id bigint
+  type "enum('PAGE_RANGE','PATIENT')"
+  page_start varchar
+  page_end varchar
+  status "enum('ASSIGNED','COMPLETED','IN_PROGRESS','UNASSIGNED')"
+  assigned_to varchar
+  coder_page_range varchar
+  date_of_service date
+  created_at timestamp
+}
+
+Table coder_sessions {
+  id bigint [pk, increment]
+  work_unit_id bigint
+  coder_id bigint
+  started_at timestamp
+  completed_at timestamp
+}
+
+Table file_processing_status {
+  id bigint [pk, increment]
+  file_name varchar
+  s3_path varchar [unique]
+  project_id int
+  project_type varchar
+  status varchar
+  error_message text
+  total_pages int
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table meat_keywords {
+  id bigint [pk, increment]
+  work_unit_id bigint
+  category varchar
+  keyword varchar
 }
 
 // Relationships
-Ref: coding_results.coder_id > users.id
 Ref: coding_results.work_unit_id > work_units.id
+Ref: coding_results.file_id > files.id
+Ref: coding_results.coder_id > users.id
 Ref: files.project_id > projects.id
 Ref: patients.project_id > projects.id
 Ref: patients.file_id > files.id
 Ref: projects.created_by > users.id
+Ref: projects.company_id > company.id
 Ref: users.company_id > company.id
 Ref: work_units.patient_id > patients.id
 Ref: work_units.project_id > projects.id
 Ref: work_units.file_id > files.id
-Ref: work_units.assigned_to > users.id
+Ref: coder_sessions.work_unit_id > work_units.id
+Ref: coder_sessions.coder_id > users.id
+Ref: meat_keywords.work_unit_id > work_units.id
