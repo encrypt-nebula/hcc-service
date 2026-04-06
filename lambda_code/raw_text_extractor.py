@@ -186,7 +186,8 @@ def call_bedrock_nova(file_content, file_ext):
 1. signature_found: (boolean)
 2. credentials: (string or null) e.g. "PT", "MD"
 3. first_name, last_name, dob: (strings)
-4. details: (list of objects) For each encounter/Date of Service (DOS) found, extract:
+4. hcin_number, member_id, physician_name: (strings)
+5. details: (list of objects) For each encounter/Date of Service (DOS) found, extract:
    - dos: (string) Date of service.
    - extracted_icd_codes: (list of strings) ICD-10 codes explicitly written.
    - ai_suggested_icd_code: (list of strings) ICD-10 codes suggested by clinical logic.
