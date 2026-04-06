@@ -54,6 +54,22 @@ public class PatientService {
             existing.setDateOfService(incoming.getDateOfService());
         }
 
+        if (incoming.getHcinNumber() != null) {
+            existing.setHcinNumber(incoming.getHcinNumber());
+        }
+
+        if (incoming.getMemberId() != null) {
+            existing.setMemberId(incoming.getMemberId());
+        }
+
+        if (incoming.getPhysicianName() != null) {
+            existing.setPhysicianName(incoming.getPhysicianName());
+        }
+
+        if (incoming.getSignedAt() != null) {
+            existing.setSignedAt(incoming.getSignedAt());
+        }
+
         return repo.save(existing);
     }
 
