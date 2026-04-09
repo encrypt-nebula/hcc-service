@@ -1,0 +1,27 @@
+meta {
+  name: "Update Coding Result"
+  type: "http"
+  seq: 1
+}
+
+patch {
+  url: {{baseUrl}}/coding-results/{{codingResultId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "manualIcdCode": [
+      {
+        "code": "E11.9",
+        "reason": "Test singular reason",
+        "reasons": ["Flexible", "List"]
+      }
+    ]
+  }
+}
+
+vars:pre-request {
+  codingResultId: 1
+}

@@ -1,0 +1,23 @@
+meta {
+  name: "Update Scores and Manual Codes"
+  type: "http"
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/hcc-scores
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "codingResultId": 1,
+    "icdCodes": [
+      {
+        "code": "I10",
+        "reason": "Updated via HCC Scores API with reasons"
+      }
+    ]
+  }
+}
