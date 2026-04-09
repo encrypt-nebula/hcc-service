@@ -1,5 +1,7 @@
 package com.example.hcc.dto;
 
+import com.example.hcc.entity.IcdEntry;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -55,7 +57,7 @@ public class ExtractDataRequest {
     @Data
     public static class ExtractDetail {
         private LocalDate dos;
-        private List<String> extractedIcdCodes;
-        private List<String> aiSuggestedIcdCode;
+        private List<IcdEntry> extractedIcdCodes;
+        private List<IcdEntry> aiSuggestedIcdCode;
     }
 }

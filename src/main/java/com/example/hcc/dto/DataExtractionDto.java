@@ -1,5 +1,6 @@
 package com.example.hcc.dto;
 
+import com.example.hcc.entity.IcdEntry;
 import lombok.Data;
 import java.util.List;
 
@@ -29,7 +30,7 @@ public class DataExtractionDto {
     @Data
     public static class EncounterDetailDto {
         private String dos;
-        private List<String> extractedIcdCodes;
-        private List<String> aiSuggestedIcdCode;
+        private List<IcdEntry> extractedIcdCodes;
+        private List<IcdEntry> aiSuggestedIcdCode;
     }
 }
