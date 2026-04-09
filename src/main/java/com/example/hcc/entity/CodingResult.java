@@ -3,6 +3,7 @@ package com.example.hcc.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+// Removed Hibernate-specific JSON mapping annotations to use JPA Convert instead
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -40,16 +41,20 @@ public class CodingResult {
     private User coder;
 
     @Column(name = "manual_icd_code")
-    private List<String> manualIcdCode;
+    @Convert(converter = IcdEntryListConverter.class)
+    private List<IcdEntry> manualIcdCode;
 
     @Column(name = "ai_icd_code")
-    private List<String> aiIcdCode;
+    @Convert(converter = IcdEntryListConverter.class)
+    private List<IcdEntry> aiIcdCode;
 
     @Column(name = "extracted_icd_code")
-    private List<String> extractedIcdCode;
+    @Convert(converter = IcdEntryListConverter.class)
+    private List<IcdEntry> extractedIcdCode;
 
     @Column(name = "submitted_icd_code")
-    private List<String> submittedIcdCode;
+    @Convert(converter = IcdEntryListConverter.class)
+    private List<IcdEntry> submittedIcdCode;
 
     @Column(name = "hcc_score")
     private BigDecimal hccScore;
