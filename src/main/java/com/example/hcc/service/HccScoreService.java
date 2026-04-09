@@ -3,6 +3,7 @@ package com.example.hcc.service;
 import com.example.hcc.dto.HccScoreUpdateRequest;
 import com.example.hcc.entity.CodingResult;
 import com.example.hcc.entity.HccScore;
+import com.example.hcc.entity.IcdEntry;
 import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.CodingResultRepository;
 import com.example.hcc.repository.HccScoreRepository;
@@ -22,7 +23,10 @@ public class HccScoreService {
 
     public CodingResult updateCodingResultWithScores(HccScoreUpdateRequest request) {
 
-        List<HccScore> scores = repository.findAllByIcdCodeIn(request.getIcdCodes());
+        List<String> icdCodeStrings = request.getIcdCodes().stream()
+                .map(IcdEntry::getCode)
+                .toList();
+        List<HccScore> scores = repository.findAllByIcdCodeIn(icdCodeStrings);
 
         BigDecimal totalScore = scores.stream()
                 .map(HccScore::getHccScore)

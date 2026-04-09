@@ -11,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -58,44 +60,41 @@ public class DataExtractionService {
 
         // 4. Handle Encounter Details (Multiple DOS)
         if (project.getProjectType() == ProjectType.PROSPECTIVE) {
-            // PROSPECTIVE: Create exactly one WorkUnit for the entire file
-            WorkUnit workUnit;
-            if (dto.getWorkId() != null) {
-                workUnit = workUnitRepository.findById(dto.getWorkId())
-                        .orElse(new WorkUnit());
-            } else {
-                workUnit = new WorkUnit();
-            }
-            workUnit.setProject(project);
-            workUnit.setFile(fileRecord);
-            workUnit.setPatient(patient);
-            workUnit.setType(WorkUnitType.PATIENT);
-            workUnit.setStatus(WorkUnitStatus.UNASSIGNED);
-
             if (dto.getDetails() != null && !dto.getDetails().isEmpty()) {
-                // Filter details to find the first valid one for WorkUnit base data
-                DataExtractionDto.EncounterDetailDto firstValidDetail = dto.getDetails().stream()
-                        .filter(this::isValidDetail)
-                        .findFirst()
-                        .orElse(null);
+                // PROSPECTIVE: Create one WorkUnit per unique valid DOS.
+                Map<LocalDate, WorkUnit> workUnitsByDos = new LinkedHashMap<>();
 
-                if (firstValidDetail != null) {
-                    workUnit.setDateOfService(parseSafeDate(firstValidDetail.getDos()));
-
-                    workUnit = workUnitRepository.save(workUnit);
-
-                    // Create CodingResults for each VALID detail entry
-                    for (DataExtractionDto.EncounterDetailDto detail : dto.getDetails()) {
-                        if (isValidDetail(detail)) {
-                            CodingResult result = new CodingResult();
-                            result.setWorkUnit(workUnit);
-                            result.setFile(fileRecord);
-                            result.setDos(parseSafeDate(detail.getDos()));
-                            result.setExtractedIcdCode(detail.getExtractedIcdCodes());
-                            result.setAiIcdCode(deduplicateAiCodes(detail.getExtractedIcdCodes(), detail.getAiSuggestedIcdCode()));
-                            codingResultRepository.save(result);
-                        }
+                for (DataExtractionDto.EncounterDetailDto detail : dto.getDetails()) {
+                    if (!isValidDetail(detail)) {
+                        continue;
                     }
+
+                    LocalDate detailDos = parseSafeDate(detail.getDos());
+                    if (detailDos == null) {
+                        continue;
+                    }
+
+                    WorkUnit workUnit = workUnitsByDos.get(detailDos);
+                    if (workUnit == null) {
+                        workUnit = new WorkUnit();
+                        workUnit.setProject(project);
+                        workUnit.setFile(fileRecord);
+                        workUnit.setPatient(patient);
+                        workUnit.setType(WorkUnitType.PATIENT);
+                        workUnit.setStatus(WorkUnitStatus.UNASSIGNED);
+                        workUnit.setDateOfService(detailDos);
+                        workUnit = workUnitRepository.save(workUnit);
+                        workUnitsByDos.put(detailDos, workUnit);
+                    }
+
+                    CodingResult result = new CodingResult();
+                    result.setWorkUnit(workUnit);
+                    result.setFile(fileRecord);
+                    result.setDos(detailDos);
+                    result.setExtractedIcdCode(detail.getExtractedIcdCodes());
+                    result.setAiIcdCode(
+                            deduplicateAiCodes(detail.getExtractedIcdCodes(), detail.getAiSuggestedIcdCode()));
+                    codingResultRepository.save(result);
                 }
             }
         } else {
@@ -138,18 +137,18 @@ public class DataExtractionService {
      * Removes any ICD codes from the AI suggested list that are already present
      * in the extracted ICD codes list.
      */
-    private List<String> deduplicateAiCodes(List<String> extractedCodes, List<String> aiSuggestedCodes) {
+    private List<IcdEntry> deduplicateAiCodes(List<IcdEntry> extractedCodes, List<IcdEntry> aiSuggestedCodes) {
         if (aiSuggestedCodes == null || aiSuggestedCodes.isEmpty()) {
             return aiSuggestedCodes;
         }
         if (extractedCodes == null || extractedCodes.isEmpty()) {
             return aiSuggestedCodes;
         }
-        Set<String> extractedSet = new HashSet<>(extractedCodes);
-        List<String> deduplicated = new ArrayList<>();
-        for (String code : aiSuggestedCodes) {
-            if (!extractedSet.contains(code)) {
-                deduplicated.add(code);
+        Set<String> extractedSet = new HashSet<>(extractedCodes.stream().map(IcdEntry::getCode).toList());
+        List<IcdEntry> deduplicated = new ArrayList<>();
+        for (IcdEntry entry : aiSuggestedCodes) {
+            if (!extractedSet.contains(entry.getCode())) {
+                deduplicated.add(entry);
             }
         }
         return deduplicated;

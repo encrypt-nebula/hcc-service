@@ -68,18 +68,18 @@ public class ExtractDataMapper {
      * Removes any ICD codes from the AI suggested list that are already present
      * in the extracted ICD codes list.
      */
-    private List<String> deduplicateAiCodes(List<String> extractedCodes, List<String> aiSuggestedCodes) {
+    private List<IcdEntry> deduplicateAiCodes(List<IcdEntry> extractedCodes, List<IcdEntry> aiSuggestedCodes) {
         if (aiSuggestedCodes == null || aiSuggestedCodes.isEmpty()) {
             return aiSuggestedCodes;
         }
         if (extractedCodes == null || extractedCodes.isEmpty()) {
             return aiSuggestedCodes;
         }
-        Set<String> extractedSet = new HashSet<>(extractedCodes);
-        List<String> deduplicated = new ArrayList<>();
-        for (String code : aiSuggestedCodes) {
-            if (!extractedSet.contains(code)) {
-                deduplicated.add(code);
+        Set<String> extractedSet = new HashSet<>(extractedCodes.stream().map(IcdEntry::getCode).toList());
+        List<IcdEntry> deduplicated = new ArrayList<>();
+        for (IcdEntry entry : aiSuggestedCodes) {
+            if (!extractedSet.contains(entry.getCode())) {
+                deduplicated.add(entry);
             }
         }
         return deduplicated;
