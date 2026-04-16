@@ -20,34 +20,50 @@ import datetime
 
 def format_date(date_str):
     """Attempt to normalize date strings to YYYY-MM-DD for Java LocalDate."""
-    if not date_str or date_str.lower() == "unknown":
+    if not date_str or str(date_str).lower() in ["unknown", "none", "null", ""]:
         return "Unknown"
-    # Basic regex-based normalization for MM/DD/YY(YY) or DD-MM-YYYY
+    
+    date_str = str(date_str).strip()
+    
+    # Clean up common natural language artifacts (e.g., "11th", "Tuesday,")
+    # Remove day names
+    date_str = re.sub(r'^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)[,\s]*', '', date_str, flags=re.IGNORECASE)
+    # Remove ordinal suffixes (1st, 2nd, 3rd, 4th...)
+    date_str = re.sub(r'(\d+)(st|nd|rd|th)', r'\1', date_str)
+    
+    # 1. Try ISO format (YYYY-MM-DD) directly
     try:
-        # Match MM/DD/YY or MM/DD/YYYY
-        match = re.search(r'(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})', date_str)
-        if match:
-            part1, part2, year_str = match.groups()
-            year = int(year_str)
-            if len(year_str) == 2:
-                year = 2000 + year # Assume 20xx for 2-digit years
-            
-            p1, p2 = int(part1), int(part2)
-            # Try MM/DD/YYYY vs DD/MM/YYYY
-            try:
-                # Try MM/DD first
-                d = datetime.date(year, p1, p2)
-                return d.isoformat()
-            except ValueError:
-                try:
-                    # Try DD/MM if first failed
-                    d = datetime.date(year, p2, p1)
-                    return d.isoformat()
-                except ValueError:
-                    pass
+        return datetime.date.fromisoformat(date_str[:10]).isoformat()
     except:
         pass
-    return "Unknown" # Return Unknown if invalid instead of garbage like 2001-01-83
+
+    # 2. Try common numeric formats with regex (MM/DD/YYYY, DD-MM-YYYY)
+    try:
+        match = re.search(r'(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})', date_str)
+        if match:
+            p1, p2, year_str = match.groups()
+            year = int(year_str)
+            if len(year_str) == 2:
+                year = 2000 + year
+            
+            # Try MM/DD/YYYY then DD/MM/YYYY
+            for d, m in [(int(p2), int(p1)), (int(p1), int(p2))]:
+                try:
+                    return datetime.date(year, m, d).isoformat()
+                except ValueError:
+                    continue
+    except:
+        pass
+
+    # 3. Try natural language parsing (e.g., "November 11 2025")
+    formats = ["%B %d %Y", "%b %d %Y", "%d %B %Y", "%d %b %Y", "%m %d %Y"]
+    for fmt in formats:
+        try:
+            return datetime.datetime.strptime(date_str.replace(',', ''), fmt).date().isoformat()
+        except:
+            continue
+
+    return "Unknown"
 
 def get_internal_api_key():
     """Fetches the shared internal API key from Secrets Manager."""
@@ -140,7 +156,7 @@ def lambda_handler(event, context):
         
         total_pages = estimate_pdf_pages(obj_metadata['ContentLength']) if file_ext == 'pdf' else 1
 
-        extraction = call_bedrock_nova(file_content, file_ext)
+        extraction = call_bedrock_nova(file_content, file_ext, file_name)
         
         # Mapping to the payload format the Spring Boot API expects
         merged_details = merge_details(extraction.get('details', []))
@@ -161,7 +177,7 @@ def lambda_handler(event, context):
             "hcinNumber": extraction.get('hcin_number', 'Unknown'),
             "memberId": extraction.get('member_id', 'Unknown'),
             "physicianName": extraction.get('physician_name', 'Unknown'),
-            "signedAt": None,
+            "signedAt": format_date(extraction.get('signed_at')),
             "projectId": int(project_id_str) if project_id_str.isdigit() else project_id_str,
             "workUnitType": "PAGE_RANGE" if project_type == "RETROSPECTIVE" else "PATIENT",
             "details": merged_details,
@@ -185,14 +201,14 @@ def lambda_handler(event, context):
         print(f"Lambda Error: {str(e)}")
         return {'statusCode': 500, 'body': json.dumps({'error': str(e)})}
 
-def call_bedrock_nova(file_content, file_ext):
+def call_bedrock_nova(file_content, file_ext, file_name):
     prompt = """Analyze this clinical document and extract JSON:
 1. signature_found: (boolean)
 2. credentials: (string or null) e.g. "PT", "MD"
-3. first_name, last_name, dob: (strings)
-4. hcin_number, member_id, physician_name: (strings)
+3. first_name, last_name, dob: (strings, DOB format: YYYY-MM-DD)
+4. hcin_number, member_id, physician_name, signed_at: (strings, signed_at format: YYYY-MM-DD)
 5. details: (list of objects) For each encounter/Date of Service (DOS) found, extract:
-   - dos: (string) Date of service.
+   - dos: (string) Date of service in YYYY-MM-DD format.
    - extracted_icd_codes: (list of strings) ICD-10 codes explicitly written.
    - ai_suggested_icd_code: (list of strings) ICD-10 codes suggested by clinical logic.
    - monitor: (boolean) Signs, symptoms, disease progression, or regression documented.
@@ -203,12 +219,32 @@ def call_bedrock_nova(file_content, file_ext):
 Return ONLY JSON object."""
 
     content_blocks = []
-    if file_ext in ['pdf', 'csv', 'txt']:
+    
+    # Helper to detect image format from magic bytes
+    def detect_format(content, ext):
+        if content.startswith(b'\xff\xd8'): return 'jpeg'
+        if content.startswith(b'\x89PNG\r\n\x1a\n'): return 'png'
+        if content.startswith(b'RIFF') and content[8:12] == b'WEBP': return 'webp'
+        if content.startswith(b'GIF87a') or content.startswith(b'GIF89a'): return 'gif'
+        if b'ftypavif' in content[4:12]: return 'avif'
+        
+        # Fallback to extension mapping
+        ext_map = {'jpg': 'jpeg', 'jpeg': 'jpeg', 'png': 'png', 'webp': 'webp', 'gif': 'gif', 'avif': 'avif'}
+        return ext_map.get(ext.lower())
+
+    detected_format = detect_format(file_content, file_ext)
+
+    if file_ext in ['pdf', 'csv', 'txt', 'docx', 'xlsx', 'md']:
         content_blocks.append({'document': {'name': 'Doc', 'format': file_ext, 'source': {'bytes': file_content}}})
-    elif file_ext in ['png', 'jpg', 'jpeg', 'webp']:
-        content_blocks.append({'image': {'format': 'jpeg' if file_ext == 'jpg' else file_ext, 'source': {'bytes': file_content}}})
+    elif detected_format in ['png', 'jpeg', 'webp', 'gif']:
+        content_blocks.append({'image': {'format': detected_format, 'source': {'bytes': file_content}}})
+    elif detected_format == 'avif':
+        # Bedrock Converse does NOT support AVIF. Sending it with a false format tag causes a ValidationException.
+        # We skip the image block and inform the model via text to avoid a hard crash.
+        print(f"Error: AVIF format detected for {file_ext}. This format is not supported by Bedrock Converse API.")
+        content_blocks.append({'text': f"[Warning: The uploaded file {file_name} is in AVIF format, which is currently not supported for direct processing. Please convert to JPG or PNG.]"})
     else:
-        content_blocks.append({'text': f"Filename: {file_ext}"})
+        content_blocks.append({'text': f"File context (unsupported or unrecognized format): {file_ext}"})
 
     content_blocks.append({'text': prompt})
 
