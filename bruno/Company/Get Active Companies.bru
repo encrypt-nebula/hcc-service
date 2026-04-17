@@ -1,0 +1,11 @@
+meta {
+  name: "Get Active Companies"
+  type: "http"
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/company/active
+  body: none
+  auth: inherit
+}

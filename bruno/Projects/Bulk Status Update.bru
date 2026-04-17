@@ -1,0 +1,18 @@
+meta {
+  name: "Update Project Status Bulk"
+  type: "http"
+  seq: 3
+}
+
+put {
+  url: {{base_url}}/projects/bulk-status-update
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ids": [1, 2, 3],
+    "status": "ACTIVE"
+  }
+}

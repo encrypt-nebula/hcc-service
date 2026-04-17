@@ -1,0 +1,11 @@
+meta {
+  name: "Get Active Projects"
+  type: "http"
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/projects/active
+  body: none
+  auth: inherit
+}
