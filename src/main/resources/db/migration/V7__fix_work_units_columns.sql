@@ -1,0 +1,3 @@
+ALTER TABLE work_units 
+MODIFY COLUMN assigned_to JSON NULL,
+ADD COLUMN IF NOT EXISTS coder_page_range JSON NULL;

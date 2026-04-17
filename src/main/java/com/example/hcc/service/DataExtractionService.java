@@ -28,11 +28,23 @@ public class DataExtractionService {
 
     @Transactional
     public void processExtraction(DataExtractionDto dto) {
+        System.out.println("Processing extraction for project: " + dto.getProjectId() + ", file: " + dto.getFileName());
+
         // 1. Get Project
         Project project = projectRepository.findById(dto.getProjectId())
                 .orElseThrow(() -> new RuntimeException("Project not found with ID: " + dto.getProjectId()));
 
-        // 2. Save/Update FileRecord
+        // 2. Clear existing entries if reprocessing (allows clean state)
+        fileRepository.findByS3Path(dto.getS3Path()).ifPresent(f -> {
+            List<WorkUnit> existingWus = workUnitRepository.findByFile_Id(f.getId());
+            for (WorkUnit wu : existingWus) {
+                codingResultRepository.deleteByWorkUnit_Id(wu.getId());
+            }
+            workUnitRepository.deleteByFile_Id(f.getId());
+            patientRepository.deleteByFile_Id(f.getId());
+        });
+
+        // 3. Save/Update FileRecord
         FileRecord fileRecord = fileRepository.findByS3Path(dto.getS3Path())
                 .orElse(new FileRecord());
 
@@ -44,7 +56,7 @@ public class DataExtractionService {
         fileRecord.setUploadStatus(UploadStatus.PROCESSED);
         fileRecord = fileRepository.save(fileRecord);
 
-        // 3. Save Patient (Primary/Top-level)
+        // 4. Save Patient (Primary/Top-level)
         Patient patient = new Patient();
         patient.setProject(project);
         patient.setFile(fileRecord);
@@ -58,21 +70,19 @@ public class DataExtractionService {
         patient.setSignedAt(parseSafeDate(dto.getSignedAt()));
         patient = patientRepository.save(patient);
 
-        // 4. Handle Encounter Details (Multiple DOS)
-        if (project.getProjectType() == ProjectType.PROSPECTIVE) {
-            if (dto.getDetails() != null && !dto.getDetails().isEmpty()) {
+        // 5. Handle Encounter Details
+        boolean workUnitCreated = false;
+
+        if (dto.getDetails() != null && !dto.getDetails().isEmpty()) {
+            if (project.getProjectType() == ProjectType.PROSPECTIVE) {
                 // PROSPECTIVE: Create one WorkUnit per unique valid DOS.
                 Map<LocalDate, WorkUnit> workUnitsByDos = new LinkedHashMap<>();
 
                 for (DataExtractionDto.EncounterDetailDto detail : dto.getDetails()) {
-                    if (!isValidDetail(detail)) {
-                        continue;
-                    }
+                    if (!isValidDetail(detail)) continue;
 
                     LocalDate detailDos = parseSafeDate(detail.getDos());
-                    if (detailDos == null) {
-                        continue;
-                    }
+                    if (detailDos == null) continue;
 
                     WorkUnit workUnit = workUnitsByDos.get(detailDos);
                     if (workUnit == null) {
@@ -84,53 +94,55 @@ public class DataExtractionService {
                         workUnit.setStatus(WorkUnitStatus.UNASSIGNED);
                         workUnit.setDateOfService(detailDos);
                         workUnit = workUnitRepository.save(workUnit);
+
                         workUnitsByDos.put(detailDos, workUnit);
+                        workUnitCreated = true;
                     }
-
-                    CodingResult result = new CodingResult();
-                    result.setWorkUnit(workUnit);
-                    result.setFile(fileRecord);
-                    result.setDos(detailDos);
-                    result.setExtractedIcdCode(detail.getExtractedIcdCodes());
-                    result.setAiIcdCode(
-                            deduplicateAiCodes(detail.getExtractedIcdCodes(), detail.getAiSuggestedIcdCode()));
-                    codingResultRepository.save(result);
+                    saveCodingResult(workUnit, fileRecord, detailDos, detail);
                 }
-            }
-        } else {
-            // RETROPROSPECTIVE: Create one WorkUnit for each detail entry (each unique DOS)
-            if (dto.getDetails() != null) {
+            } else {
+                // RETROPROSPECTIVE: Create one WorkUnit for each detail entry
                 for (DataExtractionDto.EncounterDetailDto detail : dto.getDetails()) {
-                    if (!isValidDetail(detail)) {
-                        continue;
-                    }
+                    if (!isValidDetail(detail)) continue;
 
-                    WorkUnit workUnit;
-                    if (dto.getWorkId() != null) {
-                        workUnit = workUnitRepository.findById(dto.getWorkId())
-                                .orElse(new WorkUnit());
-                    } else {
-                        workUnit = new WorkUnit();
-                    }
+                    LocalDate detailDos = parseSafeDate(detail.getDos());
+                    WorkUnit workUnit = new WorkUnit();
                     workUnit.setProject(project);
                     workUnit.setFile(fileRecord);
                     workUnit.setPatient(patient);
                     workUnit.setType(WorkUnitType.PAGE_RANGE);
                     workUnit.setStatus(WorkUnitStatus.UNASSIGNED);
-                    workUnit.setDateOfService(parseSafeDate(detail.getDos()));
-
+                    workUnit.setDateOfService(detailDos);
                     workUnit = workUnitRepository.save(workUnit);
 
-                    CodingResult result = new CodingResult();
-                    result.setWorkUnit(workUnit);
-                    result.setFile(fileRecord);
-                    result.setDos(parseSafeDate(detail.getDos()));
-                    result.setExtractedIcdCode(detail.getExtractedIcdCodes());
-                    result.setAiIcdCode(deduplicateAiCodes(detail.getExtractedIcdCodes(), detail.getAiSuggestedIcdCode()));
-                    codingResultRepository.save(result);
+                    saveCodingResult(workUnit, fileRecord, detailDos, detail);
+                    workUnitCreated = true;
                 }
             }
         }
+
+        // 6. Fallback: If no work units were created (empty details or all invalid), create a default one
+        if (!workUnitCreated) {
+            System.out.println("No encounter details found. Creating a fallback work unit for file: " + dto.getFileName());
+            WorkUnit fallbackWu = new WorkUnit();
+            fallbackWu.setProject(project);
+            fallbackWu.setFile(fileRecord);
+            fallbackWu.setPatient(patient);
+            fallbackWu.setType(project.getProjectType() == ProjectType.PROSPECTIVE ? WorkUnitType.PATIENT : WorkUnitType.PAGE_RANGE);
+            fallbackWu.setStatus(WorkUnitStatus.UNASSIGNED);
+            fallbackWu.setDateOfService(parseSafeDate(dto.getDos()));
+            workUnitRepository.save(fallbackWu);
+        }
+    }
+
+    private void saveCodingResult(WorkUnit wu, FileRecord file, LocalDate dos, DataExtractionDto.EncounterDetailDto detail) {
+        CodingResult result = new CodingResult();
+        result.setWorkUnit(wu);
+        result.setFile(file);
+        result.setDos(dos);
+        result.setExtractedIcdCode(detail.getExtractedIcdCodes());
+        result.setAiIcdCode(deduplicateAiCodes(detail.getExtractedIcdCodes(), detail.getAiSuggestedIcdCode()));
+        codingResultRepository.save(result);
     }
 
     /**

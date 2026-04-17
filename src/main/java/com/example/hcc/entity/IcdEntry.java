@@ -30,7 +30,7 @@ public class IcdEntry {
         }
     }
 
-    @JsonCreator
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static IcdEntry fromString(String code) {
         return IcdEntry.builder()
                 .code(code)
