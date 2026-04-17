@@ -25,7 +25,7 @@ public class CompanyController {
 
     @GetMapping
     public List<Company> all() {
-        return service.getAll();
+        return service.getCompaniesByCurrentUser();
     }
 
     @GetMapping("/{id}")

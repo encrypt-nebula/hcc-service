@@ -1,13 +1,17 @@
 package com.example.hcc.service;
 
 import com.example.hcc.entity.Company;
+import com.example.hcc.entity.User;
+import com.example.hcc.enums.Role;
 import com.example.hcc.enums.Status;
 import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.CompanyRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -15,6 +19,7 @@ import java.util.List;
 public class CompanyService {
 
     private final CompanyRepository repo;
+    private final AuditorAware<User> auditorAware;
 
     public Company create(Company company) {
         return repo.save(company);
@@ -22,6 +27,21 @@ public class CompanyService {
 
     public List<Company> getAll() {
         return repo.findAll();
+    }
+
+    public List<Company> getCompaniesByCurrentUser() {
+        User user = auditorAware.getCurrentAuditor()
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getRole() == Role.SUPER_ADMIN) {
+            return repo.findAll();
+        }
+
+        if (user.getCompany() != null) {
+            return List.of(user.getCompany());
+        }
+
+        return Collections.emptyList();
     }
 
     public Company get(Long id) {
