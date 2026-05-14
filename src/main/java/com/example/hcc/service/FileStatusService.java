@@ -23,6 +23,7 @@ public class FileStatusService {
         status.setStatus(FileProcessingStatusType.valueOf(dto.getStatus().toUpperCase()));
         status.setErrorMessage(dto.getErrorMessage());
         status.setTotalPages(dto.getTotalPages());
+        status.setIsValid(dto.getIsValid());
 
         if (dto.getFileName() != null) {
             status.setFileName(dto.getFileName());

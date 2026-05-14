@@ -23,9 +23,11 @@ public class DataExtractionDto {
     private String hcinNumber;
     private String memberId;
     private String physicianName;
+    private String insurance;
     private String signedAt;
     private List<EncounterDetailDto> details;
     private String dbStatus;
+    private Boolean isValid;
 
     @Data
     public static class EncounterDetailDto {

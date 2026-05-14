@@ -15,4 +15,5 @@ public class FileStatusUpdateDto {
     private String fileName;
     private Integer projectId;
     private String projectType;
+    private Boolean isValid;
 }

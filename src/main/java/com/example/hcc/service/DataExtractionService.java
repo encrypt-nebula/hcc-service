@@ -53,7 +53,8 @@ public class DataExtractionService {
         fileRecord.setS3Path(dto.getS3Path());
         fileRecord.setTotalPages(dto.getTotalPages());
         fileRecord.setSignature(dto.getSignature());
-        fileRecord.setUploadStatus(UploadStatus.PROCESSED);
+        fileRecord.setIsValid(dto.getIsValid());
+        fileRecord.setUploadStatus(dto.getIsValid() != null && !dto.getIsValid() ? UploadStatus.INVALID : UploadStatus.PROCESSED);
         fileRecord = fileRepository.save(fileRecord);
 
         // 4. Save Patient (Primary/Top-level)
@@ -67,6 +68,7 @@ public class DataExtractionService {
         patient.setHcinNumber(dto.getHcinNumber());
         patient.setMemberId(dto.getMemberId());
         patient.setPhysicianName(dto.getPhysicianName());
+        patient.setInsurance(dto.getInsurance());
         patient.setSignedAt(parseSafeDate(dto.getSignedAt()));
         patient = patientRepository.save(patient);
 
