@@ -31,10 +31,19 @@ public class FileRecord {
 
     private String signature;
 
+    @Column(name = "total_pages")
     private Integer totalPages;
+
+    @Column(name = "is_valid")
+    private Boolean isValid;
 
     @Enumerated(EnumType.STRING)
     private UploadStatus uploadStatus;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+    @JoinColumn(name = "auditor_id")
+    private User auditor;
 
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;

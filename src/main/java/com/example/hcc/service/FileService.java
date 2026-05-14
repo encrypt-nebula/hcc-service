@@ -54,6 +54,10 @@ public class FileService {
             existing.setSignature(incoming.getSignature());
         }
 
+        if (incoming.getAuditor() != null) {
+            existing.setAuditor(incoming.getAuditor());
+        }
+
         return repo.save(existing);
     }
 
