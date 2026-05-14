@@ -50,6 +50,9 @@ public class Patient {
     @Column(name = "physician_name")
     private String physicianName;
 
+    @Column(name = "insurance")
+    private String insurance;
+
     @Column(name = "signed_at")
     private LocalDate signedAt;
 
