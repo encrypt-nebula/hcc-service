@@ -11,7 +11,7 @@ IMAGE_TAR_FILE="hcc-service.tar"
 # Default Variables
 DEFAULT_USER="ubuntu"
 DEFAULT_IP="54.84.217.140"
-DEFAULT_KEY="/Users/harshsharma/Hivemynds/hcc-service/deployment/hcc-keypair.pem"
+DEFAULT_KEY="/Users/harshsharma/HCC-Suite/hcc-service/deployment/hcc-keypair.pem"
 
 # Move to the project root directory
 cd "$(dirname "$0")/.."
@@ -26,7 +26,18 @@ EC2_IP=${EC2_IP:-$DEFAULT_IP}
 read -p "Enter full path to your PEM key file [$DEFAULT_KEY]: " KEY_PATH
 KEY_PATH=${KEY_PATH:-$DEFAULT_KEY}
 
-# Check if Docker is running
+# --- AWS Credentials Extraction ---
+CSV_FILE="harsh_accessKeys.csv"
+if [[ -f "$CSV_FILE" ]]; then
+    echo "Found $CSV_FILE, extracting credentials..."
+    # Extracting from the 2nd line, 1st and 2nd columns
+    AWS_ACCESS_KEY=$(awk -F, 'NR==2 {print $1}' "$CSV_FILE" | tr -d '\r\n ')
+    AWS_SECRET=$(awk -F, 'NR==2 {print $2}' "$CSV_FILE" | tr -d '\r\n ')
+    echo "Credentials extracted successfully."
+else
+    echo "Warning: $CSV_FILE not found. Deployment might fail on AWS Secret loading."
+fi
+
 if ! docker info > /dev/null 2>&1; then
   echo "Docker is not running. Please start Docker Desktop and try again."
   exit 1
@@ -57,9 +68,19 @@ ssh -T -i "$KEY_PATH" "$EC2_USER@$EC2_IP" << EOF
     sudo docker load -i /home/$EC2_USER/$IMAGE_TAR_FILE
     sudo docker rm -f $IMAGE_NAME || true
     # Run on port 8080 as per deploy.sh
-    sudo docker run -d -p 8080:8080 --name $IMAGE_NAME --restart unless-stopped $IMAGE_NAME:$IMAGE_TAG
+    # Passing extracted AWS credentials
+    echo "Starting container with AWS credentials..."
+    sudo docker run -d -p 8080:8080 \
+        --name $IMAGE_NAME \
+        --restart unless-stopped \
+        -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY \
+        -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET \
+        $IMAGE_NAME:$IMAGE_TAG
+        
     sudo docker image prune -f
 EOF
+
+
 
 # Clean up locally
 echo "Cleaning up local tar file..."

@@ -47,6 +47,17 @@ if [[ ! -f "$KEY_PATH" ]]; then
     exit 1
 fi
 
+# --- AWS Credentials Extraction ---
+CSV_FILE="harsh_accessKeys.csv"
+if [[ -f "$CSV_FILE" ]]; then
+    echo "Found $CSV_FILE, extracting credentials..."
+    AWS_ACCESS_KEY=$(awk -F, 'NR==2 {print $1}' "$CSV_FILE" | tr -d '\r\n ')
+    AWS_SECRET=$(awk -F, 'NR==2 {print $2}' "$CSV_FILE" | tr -d '\r\n ')
+    echo "Credentials extracted successfully."
+else
+    echo "Warning: $CSV_FILE not found."
+fi
+
 # --- Build Process ---
 echo "--- Building JAR file from latest code ---"
 mvn clean install -DskipTests=true
@@ -60,6 +71,7 @@ docker save -o $IMAGE_TAR_FILE $IMAGE_NAME:$IMAGE_TAG
 
 # --- Transfer & Deploy ---
 echo "--- Transferring image to EC2 instance ($EC2_IP) ---"
+chmod 600 "$KEY_PATH"
 scp -i "$KEY_PATH" "$IMAGE_TAR_FILE" "$EC2_USER@$EC2_IP:/home/$EC2_USER"
 
 echo "--- Loading Docker image and restarting container on EC2 ---"
@@ -71,8 +83,13 @@ ssh -T -i "$KEY_PATH" "$EC2_USER@$EC2_IP" << EOF
     echo "Stopping existing container (if any)..."
     sudo docker rm -f $IMAGE_NAME || true
     
-    echo "Starting new container..."
-    sudo docker run -d -p 9001:8080 --name $IMAGE_NAME --restart unless-stopped $IMAGE_NAME:$IMAGE_TAG
+    echo "Starting new container with AWS credentials..."
+    sudo docker run -d -p 8080:8080 \
+        --name $IMAGE_NAME \
+        --restart unless-stopped \
+        -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY \
+        -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET \
+        $IMAGE_NAME:$IMAGE_TAG
     
     echo "Cleaning up old images..."
     sudo docker image prune -f
@@ -80,6 +97,7 @@ ssh -T -i "$KEY_PATH" "$EC2_USER@$EC2_IP" << EOF
     echo "Deleting transferred tar file..."
     rm -f /home/$EC2_USER/$IMAGE_TAR_FILE
 EOF
+
 
 # --- Clean Up ---
 echo "--- Cleaning up local tar file ---"

@@ -3,6 +3,7 @@ import boto3
 import os
 import re
 import urllib.request
+from urllib.error import HTTPError
 
 # Clients
 bedrock_runtime = boto3.client('bedrock-runtime', region_name='us-east-1')
@@ -71,7 +72,22 @@ def get_internal_api_key():
         return "hcc-internal-secure-key-2026"
     try:
         response = secrets_client.get_secret_value(SecretId=INTERNAL_API_KEY_ARN)
-        return response['SecretString']
+        secret_string = response.get('SecretString', '')
+
+        # Secrets Manager may store either a raw string or a JSON object.
+        # Normalize both shapes to the actual API key value and strip any
+        # accidental whitespace/newlines so the downstream strict equality
+        # check does not reject an otherwise valid key.
+        try:
+            parsed = json.loads(secret_string)
+            if isinstance(parsed, dict):
+                for candidate_key in ("internal_api_key", "api_key", "value", "key"):
+                    if candidate_key in parsed and parsed[candidate_key]:
+                        return str(parsed[candidate_key]).strip()
+        except Exception:
+            pass
+
+        return str(secret_string).strip()
     except Exception as e:
         print(f"Error fetching API Key secret: {str(e)}")
         return "hcc-internal-secure-key-2026"
@@ -135,6 +151,14 @@ def send_to_external_api(payload, api_key):
     try:
         with urllib.request.urlopen(req, timeout=30) as res:
             return res.read().decode('utf-8')
+    except HTTPError as e:
+        error_body = ""
+        try:
+            error_body = e.read().decode("utf-8")
+        except Exception:
+            pass
+        print(f"External API HTTP Error: {e.code} {error_body}")
+        return f"Error: HTTP {e.code}: {error_body}"
     except Exception as e:
         print(f"External API Error: {str(e)}")
         return f"Error: {str(e)}"
