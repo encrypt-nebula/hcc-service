@@ -40,23 +40,27 @@ public class CodingResult {
     @JoinColumn(name = "coder_id")
     private User coder;
 
-    @Column(name = "manual_icd_code")
+    @Lob
+    @Column(name = "manual_icd_code", columnDefinition = "LONGTEXT")
     @Convert(converter = IcdEntryListConverter.class)
     private List<IcdEntry> manualIcdCode;
 
-    @Column(name = "ai_icd_code")
+    @Lob
+    @Column(name = "ai_icd_code", columnDefinition = "LONGTEXT")
     @Convert(converter = IcdEntryListConverter.class)
     private List<IcdEntry> aiIcdCode;
 
-    @Column(name = "extracted_icd_code")
+    @Lob
+    @Column(name = "extracted_icd_code", columnDefinition = "LONGTEXT")
     @Convert(converter = IcdEntryListConverter.class)
     private List<IcdEntry> extractedIcdCode;
 
-    @Column(name = "submitted_icd_code")
+    @Lob
+    @Column(name = "submitted_icd_code", columnDefinition = "LONGTEXT")
     @Convert(converter = IcdEntryListConverter.class)
     private List<IcdEntry> submittedIcdCode;
 
-    @Column(name = "hcc_score")
+    @Column(name = "hcc_score", precision = 12, scale = 4)
     private BigDecimal hccScore;
 
 

@@ -19,7 +19,7 @@ public class IcdCode {
     @Column(name = "icd_code")
     private String icdCode;
 
-    @Column(name = "hcc_score")
+    @Column(name = "hcc_score", precision = 12, scale = 4)
     private BigDecimal hccScore;
 
     private String description;

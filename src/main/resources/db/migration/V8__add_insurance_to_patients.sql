@@ -1,0 +1,2 @@
+ALTER TABLE patients 
+ADD COLUMN insurance VARCHAR(255);

@@ -41,6 +41,9 @@ public class FileProcessingStatus {
     @Column(name = "total_pages")
     private Integer totalPages;
 
+    @Column(name = "is_valid")
+    private Boolean isValid;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
