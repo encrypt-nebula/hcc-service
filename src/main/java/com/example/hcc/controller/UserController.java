@@ -50,4 +50,8 @@ public class UserController {
     public UserResponseDto me() {
         return service.getUserByToken();
     }
+    @GetMapping("/auditor-ids")
+    public List<Long> getAuditorIds() {
+        return service.getAuditorIds();
+    }
 }

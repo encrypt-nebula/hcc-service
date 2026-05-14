@@ -89,5 +89,8 @@ public class UserService {
 
         return responseMapper.toDto(user);
     }
+    public List<Long> getAuditorIds() {
+        return repo.findIdsByRole(com.example.hcc.enums.Role.AUDITOR);
+    }
 }
 
