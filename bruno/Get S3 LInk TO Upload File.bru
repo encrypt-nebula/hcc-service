@@ -4,10 +4,22 @@ meta {
   seq: 8
 }
 
-put {
-  url: http://0.0.0.0:5000/%20/%0A%20%20%20%20%20-H%20Content-Type:
-  body: file
+post {
+  url: https://hmcsqxvhr4rd3nqrzd4uwra44y0sytzx.lambda-url.us-east-1.on.aws/
+  body: json
   auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "project_id": "773",
+    "project_type": "PROSPECTIVE",
+    "file_name": "chunkTest.pdf"
+  }
 }
 
 settings {

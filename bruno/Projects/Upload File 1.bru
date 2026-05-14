@@ -1,0 +1,19 @@
+meta {
+  name: Upload File 1
+  type: http
+  seq: 6
+}
+
+put {
+  url: https://hcc-platform-dev-raw-docs.s3.amazonaws.com/uplo
+  body: none
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/pdf
+}
+
+settings {
+  encodeUrl: false
+}

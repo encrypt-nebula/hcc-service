@@ -40,3 +40,6 @@ build/
 
 .idea/
 hcc-service.tar
+
+harsh_accessKeys.csv
+harsh_credentials.csv
