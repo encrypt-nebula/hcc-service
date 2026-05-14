@@ -7,6 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @RestController
@@ -15,6 +18,9 @@ import java.util.List;
 public class IcdCodeController {
 
     private final IcdCodeService service;
+
+    @Value("${internal.api-key}")
+    private String expectedApiKey;
 
     @PostMapping
     public IcdCode create(@RequestBody IcdCode code) {
@@ -56,8 +62,16 @@ public class IcdCodeController {
 
     @PostMapping("/validate")
     public com.example.hcc.dto.IcdValidationResponse validateCodes(
+            @RequestHeader("X-Internal-Service-Key") String apiKey,
             @RequestBody com.example.hcc.dto.IcdValidationRequest request) {
+        if (!expectedApiKey.equals(apiKey)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Service Key");
+        }
         return new com.example.hcc.dto.IcdValidationResponse(
                 service.validateCodes(request.getQueries()));
+    }
+    @GetMapping("/search")
+    public List<IcdCode> search(@RequestParam String query) {
+        return service.search(query);
     }
 }
