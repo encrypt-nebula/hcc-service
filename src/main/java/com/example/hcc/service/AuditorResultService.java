@@ -58,19 +58,19 @@ public class AuditorResultService {
         List<IcdEntry> coderCodes = coderResult.getSubmittedIcdCode() != null ? coderResult.getSubmittedIcdCode() : new ArrayList<>();
         List<IcdEntry> auditorCodes = auditorResult.getSubmittedIcdCode() != null ? auditorResult.getSubmittedIcdCode() : new ArrayList<>();
 
-        Set<String> coderCodeSet = coderCodes.stream().map(IcdEntry::getIcdCode).filter(Objects::nonNull).collect(Collectors.toSet());
-        Set<String> auditorCodeSet = auditorCodes.stream().map(IcdEntry::getIcdCode).filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<String> coderCodeSet = coderCodes.stream().map(IcdEntry::getCode).filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<String> auditorCodeSet = auditorCodes.stream().map(IcdEntry::getCode).filter(Objects::nonNull).collect(Collectors.toSet());
 
         List<IcdEntry> common = coderCodes.stream()
-                .filter(c -> auditorCodeSet.contains(c.getIcdCode()))
+                .filter(c -> auditorCodeSet.contains(c.getCode()))
                 .toList();
 
         List<IcdEntry> missingInAuditor = coderCodes.stream()
-                .filter(c -> !auditorCodeSet.contains(c.getIcdCode()))
+                .filter(c -> !auditorCodeSet.contains(c.getCode()))
                 .toList();
 
         List<IcdEntry> extraInAuditor = auditorCodes.stream()
-                .filter(a -> !coderCodeSet.contains(a.getIcdCode()))
+                .filter(a -> !coderCodeSet.contains(a.getCode()))
                 .toList();
 
         return ComparisonResponse.builder()
