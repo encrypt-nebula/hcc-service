@@ -68,4 +68,10 @@ public class IcdCodeService {
                 .distinct()
                 .toList();
     }
+    public List<IcdCode> search(String query) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+        return repository.searchByQuery(query);
+    }
 }

@@ -14,4 +14,7 @@ public interface IcdCodeRepository extends JpaRepository<IcdCode, Long> {
 
     @org.springframework.data.jpa.repository.Query("SELECT c.icdCode FROM IcdCode c WHERE LOWER(c.icdCode) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(c.description) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<String> findValidCodesByQuery(@org.springframework.data.repository.query.Param("query") String query);
+
+    @org.springframework.data.jpa.repository.Query("SELECT c FROM IcdCode c WHERE LOWER(c.icdCode) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(c.description) LIKE LOWER(CONCAT('%', :query, '%'))")
+    List<IcdCode> searchByQuery(@org.springframework.data.repository.query.Param("query") String query);
 }
