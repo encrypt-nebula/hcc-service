@@ -4,5 +4,6 @@ public enum FileProcessingStatusType {
     PENDING,
     PROCESSING,
     EXTRACTED,
-    FAILED
+    FAILED,
+    INVALID
 }
