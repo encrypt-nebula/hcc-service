@@ -26,10 +26,10 @@ public class SecurityConfig {
                                                                                        // extraction results
                         .requestMatchers(HttpMethod.POST, "/icd-codes/validate").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/files/status").permitAll()
-                        .requestMatchers("/projects/**").permitAll()
-                        .requestMatchers("/users/**").permitAll()
-                        .requestMatchers("/companies/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/users").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/users/**").permitAll()
+                        .requestMatchers("/projects/**").permitAll()
+                        .requestMatchers("/companies/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(
                         oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));

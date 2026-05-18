@@ -51,6 +51,7 @@ public class UserController {
         return service.getUserByToken();
     }
     @GetMapping("/auditor-ids")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('TL', 'ADMIN', 'SUPER_ADMIN')")
     public List<Long> getAuditorIds() {
         return service.getAuditorIds();
     }
