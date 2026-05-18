@@ -1,0 +1,31 @@
+meta {
+  name: Save or Update Auditor Result
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/auditor-results
+  body: json
+  auth: bearer
+}
+
+body:json {
+  {
+    "workUnit": {
+      "id": 1
+    },
+    "file": {
+      "id": 1
+    },
+    "auditor": {
+      "id": 2
+    },
+    "submittedIcdCode": [
+      {
+        "code": "E11.9",
+        "reasons": ["Confirmed diagnosis"]
+      }
+    ]
+  }
+}

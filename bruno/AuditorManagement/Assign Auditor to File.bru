@@ -1,0 +1,19 @@
+meta {
+  name: Assign Auditor to File
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{base_url}}/files/1
+  body: json
+  auth: bearer
+}
+
+body:json {
+  {
+    "auditor": {
+      "id": 2
+    }
+  }
+}

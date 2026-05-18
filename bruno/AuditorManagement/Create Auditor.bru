@@ -1,0 +1,23 @@
+meta {
+  name: Create Auditor
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/users
+  body: json
+  auth: bearer
+}
+
+body:json {
+  {
+    "name": "John Auditor",
+    "email": "auditor@example.com",
+    "password": "Password123!",
+    "role": "AUDITOR",
+    "company": {
+      "id": 1
+    }
+  }
+}
