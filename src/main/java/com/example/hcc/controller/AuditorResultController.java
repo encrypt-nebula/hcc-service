@@ -30,4 +30,10 @@ public class AuditorResultController {
     public ComparisonResponse compare(@PathVariable Long workUnitId) {
         return service.compare(workUnitId);
     }
+
+    @GetMapping("/assigned-to/{auditorId}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('AUDITOR', 'TL', 'ADMIN', 'SUPER_ADMIN')")
+    public java.util.List<com.example.hcc.dto.FileAuditorResultsDTO> getByAssignedTo(@PathVariable Long auditorId) {
+        return service.getMergedAuditorResultsByAuditor(auditorId);
+    }
 }
