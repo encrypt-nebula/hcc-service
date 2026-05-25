@@ -25,6 +25,10 @@ public class FileWorkUnitsDTO {
     private String pageStart;
     private String pageEnd;
     private String coderPageRange;
+    private Boolean monitor;
+    private Boolean evaluate;
+    private Boolean assessOrAddress;
+    private Boolean treat;
     private LocalDateTime createdAt;
     private Project project;
     private Patient patient;

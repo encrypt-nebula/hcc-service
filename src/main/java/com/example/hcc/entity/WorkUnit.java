@@ -53,6 +53,18 @@ public class WorkUnit {
     @Column(name = "coder_page_range", columnDefinition = "JSON")
     private String coderPageRange;
 
+    @Column(name = "monitor")
+    private Boolean monitor;
+
+    @Column(name = "evaluate")
+    private Boolean evaluate;
+
+    @Column(name = "assess_or_address")
+    private Boolean assessOrAddress;
+
+    @Column(name = "treat")
+    private Boolean treat;
+
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 

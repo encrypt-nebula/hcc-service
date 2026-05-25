@@ -74,6 +74,19 @@ public class WorkUnitService {
             existing.setAssignedTo(incoming.getAssignedTo());
         }
 
+        if (incoming.getMonitor() != null) {
+            existing.setMonitor(incoming.getMonitor());
+        }
+        if (incoming.getEvaluate() != null) {
+            existing.setEvaluate(incoming.getEvaluate());
+        }
+        if (incoming.getAssessOrAddress() != null) {
+            existing.setAssessOrAddress(incoming.getAssessOrAddress());
+        }
+        if (incoming.getTreat() != null) {
+            existing.setTreat(incoming.getTreat());
+        }
+
         return repo.save(existing);
     }
 
@@ -208,6 +221,10 @@ public class WorkUnitService {
                             .pageStart(base.getPageStart())
                             .pageEnd(base.getPageEnd())
                             .coderPageRange(base.getCoderPageRange())
+                            .monitor(base.getMonitor())
+                            .evaluate(base.getEvaluate())
+                            .assessOrAddress(base.getAssessOrAddress())
+                            .treat(base.getTreat())
                             .createdAt(base.getCreatedAt())
                             .project(base.getProject())
                             .patient(base.getPatient())
