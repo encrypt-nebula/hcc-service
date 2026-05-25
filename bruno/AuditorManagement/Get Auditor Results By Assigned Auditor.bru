@@ -1,0 +1,11 @@
+meta {
+  name: Get Auditor Results By Assigned Auditor
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{base_url}}/auditor-results/assigned-to/1
+  body: none
+  auth: bearer
+}
