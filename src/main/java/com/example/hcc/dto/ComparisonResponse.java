@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import com.example.hcc.entity.CodingResult;
+import com.example.hcc.entity.AuditorResult;
 
 @Data
 @Builder
@@ -18,4 +20,6 @@ public class ComparisonResponse {
     private List<IcdEntry> extraInAuditor; // Codes auditor added but coder didn't
     private List<IcdEntry> missingInAuditor; // Codes coder added but auditor didn't
     private List<IcdEntry> commonCodes;
+    private CodingResult coderSubmission;
+    private AuditorResult auditorSubmission;
 }
