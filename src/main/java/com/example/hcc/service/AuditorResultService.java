@@ -1,6 +1,8 @@
 package com.example.hcc.service;
 
 import com.example.hcc.dto.ComparisonResponse;
+import com.example.hcc.dto.FileAuditorResultsDTO;
+import com.example.hcc.dto.CodingResultMergeDTO;
 import com.example.hcc.entity.AuditorResult;
 import com.example.hcc.entity.CodingResult;
 import com.example.hcc.entity.IcdEntry;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -79,6 +82,48 @@ public class AuditorResultService {
                 .commonCodes(common)
                 .missingInAuditor(missingInAuditor)
                 .extraInAuditor(extraInAuditor)
+                .coderSubmission(coderResult)
+                .auditorSubmission(auditorResult)
                 .build();
+    }
+
+    public List<FileAuditorResultsDTO> getMergedAuditorResultsByAuditor(Long auditorId) {
+        List<AuditorResult> results = repository.findByAuditor_Id(auditorId);
+        return getMergedData(results);
+    }
+
+    private List<FileAuditorResultsDTO> getMergedData(List<AuditorResult> results) {
+        Map<Long, List<AuditorResult>> groupedByFile = results.stream()
+                .collect(Collectors.groupingBy(cr -> cr.getFile().getId()));
+
+        return groupedByFile.entrySet().stream()
+                .map(entry -> {
+                    List<AuditorResult> crList = entry.getValue();
+                    if (crList.isEmpty()) return null;
+
+                    AuditorResult base = crList.get(0); 
+
+                    List<CodingResultMergeDTO> mergedList = crList.stream()
+                            .map(cr -> CodingResultMergeDTO.builder()
+                                    .id(cr.getId())
+                                    .dos(cr.getDos())
+                                    .manualIcdCode(cr.getManualIcdCode())
+                                    .aiIcdCode(cr.getAiIcdCode())
+                                    .extractedIcdCode(cr.getExtractedIcdCode())
+                                    .submittedIcdCode(cr.getSubmittedIcdCode())
+                                    .build())
+                            .toList();
+
+                    return FileAuditorResultsDTO.builder()
+                            .fileRecord(base.getFile())
+                            .workUnit(base.getWorkUnit())
+                            .auditor(base.getAuditor())
+                            .createdAt(base.getCreatedAt())
+                            .hccScore(base.getHccScore())
+                            .auditorResults(mergedList)
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .toList();
     }
 }
