@@ -86,6 +86,9 @@ public class WorkUnitService {
         if (incoming.getTreat() != null) {
             existing.setTreat(incoming.getTreat());
         }
+        if (incoming.getFeedback() != null) {
+            existing.setFeedback(incoming.getFeedback());
+        }
 
         return repo.save(existing);
     }
@@ -225,6 +228,7 @@ public class WorkUnitService {
                             .evaluate(base.getEvaluate())
                             .assessOrAddress(base.getAssessOrAddress())
                             .treat(base.getTreat())
+                            .feedback(base.getFeedback())
                             .createdAt(base.getCreatedAt())
                             .project(base.getProject())
                             .patient(base.getPatient())

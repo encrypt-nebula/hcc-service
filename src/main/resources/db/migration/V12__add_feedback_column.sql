@@ -1,0 +1,1 @@
+ALTER TABLE work_units ADD COLUMN IF NOT EXISTS feedback JSON NULL;

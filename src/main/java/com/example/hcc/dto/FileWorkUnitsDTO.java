@@ -29,6 +29,7 @@ public class FileWorkUnitsDTO {
     private Boolean evaluate;
     private Boolean assessOrAddress;
     private Boolean treat;
+    private String feedback;
     private LocalDateTime createdAt;
     private Project project;
     private Patient patient;

@@ -65,6 +65,9 @@ public class WorkUnit {
     @Column(name = "treat")
     private Boolean treat;
 
+    @Column(name = "feedback", columnDefinition = "JSON")
+    private String feedback;
+
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 
