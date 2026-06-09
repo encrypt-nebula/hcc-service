@@ -3,8 +3,10 @@ package com.example.hcc.service;
 import com.example.hcc.dto.CodingResultMergeDTO;
 import com.example.hcc.dto.FileCodingResultsDTO;
 import com.example.hcc.entity.CodingResult;
+import com.example.hcc.entity.AuditorResult;
 import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.repository.CodingResultRepository;
+import com.example.hcc.repository.AuditorResultRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CodingResultService {
     private final CodingResultRepository repo;
+    private final AuditorResultRepository auditorResultRepo;
 
     public CodingResult create(CodingResult codingResult) {
         return repo.save(codingResult);
@@ -101,6 +104,20 @@ public class CodingResultService {
         Map<Long, List<CodingResult>> groupedByFile = results.stream()
                 .collect(Collectors.groupingBy(cr -> cr.getFile().getId()));
 
+        List<Long> fileIds = results.stream()
+                .map(cr -> cr.getFile().getId())
+                .distinct()
+                .toList();
+
+        Map<Long, List<AuditorResult>> auditorResultsByFile = new HashMap<>();
+        if (!fileIds.isEmpty()) {
+            List<AuditorResult> allAuditorResults = auditorResultRepo.findByFileIdIn(fileIds);
+            auditorResultsByFile = allAuditorResults.stream()
+                    .collect(Collectors.groupingBy(ar -> ar.getFile().getId()));
+        }
+
+        Map<Long, List<AuditorResult>> finalAuditorResultsByFile = auditorResultsByFile;
+
         // 3️⃣ Build merged DTOs
         return groupedByFile.entrySet().stream()
                 .map(entry -> {
@@ -120,6 +137,18 @@ public class CodingResultService {
                                     .build())
                             .toList();
 
+                    List<AuditorResult> arList = finalAuditorResultsByFile.getOrDefault(entry.getKey(), List.of());
+                    List<CodingResultMergeDTO> mergedAuditorList = arList.stream()
+                            .map(ar -> CodingResultMergeDTO.builder()
+                                    .id(ar.getId())
+                                    .dos(ar.getDos())
+                                    .manualIcdCode(ar.getManualIcdCode())
+                                    .aiIcdCode(ar.getAiIcdCode())
+                                    .extractedIcdCode(ar.getExtractedIcdCode())
+                                    .submittedIcdCode(ar.getSubmittedIcdCode())
+                                    .build())
+                            .toList();
+
                     return FileCodingResultsDTO.builder()
                             .fileRecord(base.getFile())
                             .workUnit(base.getWorkUnit())
@@ -127,6 +156,7 @@ public class CodingResultService {
                             .createdAt(base.getCreatedAt())
                             .hccScore(base.getHccScore())
                             .codingResults(mergedList)
+                            .auditorResults(mergedAuditorList)
                             .build();
                 })
                 .filter(Objects::nonNull)

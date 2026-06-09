@@ -20,4 +20,5 @@ public class FileCodingResultsDTO {
     private LocalDateTime createdAt; // common
     private BigDecimal hccScore;
     private List<CodingResultMergeDTO> codingResults; // different columns merged
+    private List<CodingResultMergeDTO> auditorResults;
 }

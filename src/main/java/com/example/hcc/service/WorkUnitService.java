@@ -89,6 +89,12 @@ public class WorkUnitService {
         if (incoming.getFeedback() != null) {
             existing.setFeedback(incoming.getFeedback());
         }
+        if (incoming.getCoderFeedback() != null) {
+            existing.setCoderFeedback(incoming.getCoderFeedback());
+        }
+        if (incoming.getAuditorMessage() != null) {
+            existing.setAuditorMessage(incoming.getAuditorMessage());
+        }
 
         return repo.save(existing);
     }
@@ -229,6 +235,8 @@ public class WorkUnitService {
                             .assessOrAddress(base.getAssessOrAddress())
                             .treat(base.getTreat())
                             .feedback(base.getFeedback())
+                            .coderFeedback(base.getCoderFeedback())
+                            .auditorMessage(base.getAuditorMessage())
                             .createdAt(base.getCreatedAt())
                             .project(base.getProject())
                             .patient(base.getPatient())

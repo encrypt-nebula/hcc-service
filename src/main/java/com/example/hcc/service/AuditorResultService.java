@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -96,6 +97,20 @@ public class AuditorResultService {
         Map<Long, List<AuditorResult>> groupedByFile = results.stream()
                 .collect(Collectors.groupingBy(cr -> cr.getFile().getId()));
 
+        List<Long> fileIds = results.stream()
+                .map(cr -> cr.getFile().getId())
+                .distinct()
+                .toList();
+
+        Map<Long, List<CodingResult>> codingResultsByFile = new HashMap<>();
+        if (!fileIds.isEmpty()) {
+            List<CodingResult> allCodingResults = codingResultRepository.findByFileIdIn(fileIds);
+            codingResultsByFile = allCodingResults.stream()
+                    .collect(Collectors.groupingBy(cr -> cr.getFile().getId()));
+        }
+
+        Map<Long, List<CodingResult>> finalCodingResultsByFile = codingResultsByFile;
+
         return groupedByFile.entrySet().stream()
                 .map(entry -> {
                     List<AuditorResult> crList = entry.getValue();
@@ -114,6 +129,18 @@ public class AuditorResultService {
                                     .build())
                             .toList();
 
+                    List<CodingResult> codingList = finalCodingResultsByFile.getOrDefault(entry.getKey(), List.of());
+                    List<CodingResultMergeDTO> mergedCodingList = codingList.stream()
+                            .map(cr -> CodingResultMergeDTO.builder()
+                                    .id(cr.getId())
+                                    .dos(cr.getDos())
+                                    .manualIcdCode(cr.getManualIcdCode())
+                                    .aiIcdCode(cr.getAiIcdCode())
+                                    .extractedIcdCode(cr.getExtractedIcdCode())
+                                    .submittedIcdCode(cr.getSubmittedIcdCode())
+                                    .build())
+                            .toList();
+
                     return FileAuditorResultsDTO.builder()
                             .fileRecord(base.getFile())
                             .workUnit(base.getWorkUnit())
@@ -121,6 +148,7 @@ public class AuditorResultService {
                             .createdAt(base.getCreatedAt())
                             .hccScore(base.getHccScore())
                             .auditorResults(mergedList)
+                            .codingResults(mergedCodingList)
                             .build();
                 })
                 .filter(Objects::nonNull)

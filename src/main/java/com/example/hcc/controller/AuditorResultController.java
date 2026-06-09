@@ -26,7 +26,7 @@ public class AuditorResultController {
     }
 
     @GetMapping("/compare/{workUnitId}")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('TL', 'ADMIN', 'SUPER_ADMIN')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('CODER', 'AUDITOR', 'TL', 'ADMIN', 'SUPER_ADMIN')")
     public ComparisonResponse compare(@PathVariable Long workUnitId) {
         return service.compare(workUnitId);
     }

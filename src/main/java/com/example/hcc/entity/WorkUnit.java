@@ -68,6 +68,12 @@ public class WorkUnit {
     @Column(name = "feedback", columnDefinition = "JSON")
     private String feedback;
 
+    @Column(name = "coder_feedback", columnDefinition = "TEXT")
+    private String coderFeedback;
+
+    @Column(name = "auditor_message", columnDefinition = "TEXT")
+    private String auditorMessage;
+
     @Column(name = "created_at", insertable = true, updatable = false)
     private LocalDateTime createdAt;
 

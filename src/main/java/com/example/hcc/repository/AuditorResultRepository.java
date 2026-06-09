@@ -12,4 +12,5 @@ public interface AuditorResultRepository extends JpaRepository<AuditorResult, Lo
     Optional<AuditorResult> findByWorkUnitId(Long workUnitId);
     Optional<AuditorResult> findByFileId(Long fileId);
     List<AuditorResult> findByAuditor_Id(Long auditorId);
+    List<AuditorResult> findByFileIdIn(List<Long> fileIds);
 }

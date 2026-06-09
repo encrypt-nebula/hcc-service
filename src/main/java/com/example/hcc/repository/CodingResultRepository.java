@@ -34,4 +34,5 @@ public interface CodingResultRepository extends JpaRepository<CodingResult, Long
     void deleteByWorkUnit_Id(Long workUnitId);
 
     java.util.Optional<CodingResult> findByWorkUnitId(Long workUnitId);
+    List<CodingResult> findByFileIdIn(List<Long> fileIds);
 }

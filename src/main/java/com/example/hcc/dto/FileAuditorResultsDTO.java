@@ -20,4 +20,5 @@ public class FileAuditorResultsDTO {
     private LocalDateTime createdAt;
     private BigDecimal hccScore;
     private List<CodingResultMergeDTO> auditorResults;
+    private List<CodingResultMergeDTO> codingResults;
 }
