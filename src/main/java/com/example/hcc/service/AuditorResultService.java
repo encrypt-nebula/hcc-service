@@ -7,13 +7,21 @@ import com.example.hcc.entity.AuditorResult;
 import com.example.hcc.entity.CodingResult;
 import com.example.hcc.entity.IcdEntry;
 import com.example.hcc.exceptions.ResourceNotFoundException;
+import com.example.hcc.entity.FileRecord;
+import com.example.hcc.entity.User;
+import com.example.hcc.entity.WorkUnit;
 import com.example.hcc.repository.AuditorResultRepository;
 import com.example.hcc.repository.CodingResultRepository;
+import com.example.hcc.repository.FileRepository;
+import com.example.hcc.repository.WorkUnitRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,6 +34,8 @@ public class AuditorResultService {
 
     private final AuditorResultRepository repository;
     private final CodingResultRepository codingResultRepository;
+    private final FileRepository fileRepository;
+    private final WorkUnitRepository workUnitRepository;
 
     public AuditorResult saveOrUpdate(AuditorResult incoming) {
         if (incoming.getWorkUnit() != null && incoming.getWorkUnit().getId() != null) {
@@ -89,17 +99,28 @@ public class AuditorResultService {
     }
 
     public List<FileAuditorResultsDTO> getMergedAuditorResultsByAuditor(Long auditorId) {
+        List<FileRecord> assignedFiles = fileRepository.findByAuditor_Id(auditorId);
         List<AuditorResult> results = repository.findByAuditor_Id(auditorId);
-        return getMergedData(results);
+
+        List<FileRecord> allFiles = new ArrayList<>(assignedFiles);
+        Set<Long> assignedFileIds = assignedFiles.stream().map(FileRecord::getId).collect(Collectors.toSet());
+        for (AuditorResult ar : results) {
+            if (ar.getFile() != null && !assignedFileIds.contains(ar.getFile().getId())) {
+                allFiles.add(ar.getFile());
+                assignedFileIds.add(ar.getFile().getId());
+            }
+        }
+
+        return getMergedData(allFiles, results);
     }
 
-    private List<FileAuditorResultsDTO> getMergedData(List<AuditorResult> results) {
+    private List<FileAuditorResultsDTO> getMergedData(List<FileRecord> files, List<AuditorResult> results) {
         Map<Long, List<AuditorResult>> groupedByFile = results.stream()
+                .filter(cr -> cr.getFile() != null)
                 .collect(Collectors.groupingBy(cr -> cr.getFile().getId()));
 
-        List<Long> fileIds = results.stream()
-                .map(cr -> cr.getFile().getId())
-                .distinct()
+        List<Long> fileIds = files.stream()
+                .map(FileRecord::getId)
                 .toList();
 
         Map<Long, List<CodingResult>> codingResultsByFile = new HashMap<>();
@@ -111,12 +132,32 @@ public class AuditorResultService {
 
         Map<Long, List<CodingResult>> finalCodingResultsByFile = codingResultsByFile;
 
-        return groupedByFile.entrySet().stream()
-                .map(entry -> {
-                    List<AuditorResult> crList = entry.getValue();
-                    if (crList.isEmpty()) return null;
+        return files.stream()
+                .<FileAuditorResultsDTO>map(file -> {
+                    List<AuditorResult> crList = groupedByFile.getOrDefault(file.getId(), List.of());
+                    List<CodingResult> codingList = finalCodingResultsByFile.getOrDefault(file.getId(), List.of());
 
-                    AuditorResult base = crList.get(0); 
+                    WorkUnit workUnit = null;
+                    User auditor = file.getAuditor();
+                    LocalDateTime createdAt = null;
+                    BigDecimal hccScore = null;
+
+                    if (!crList.isEmpty()) {
+                        AuditorResult base = crList.get(0);
+                        workUnit = base.getWorkUnit();
+                        if (base.getAuditor() != null) {
+                            auditor = base.getAuditor();
+                        }
+                        createdAt = base.getCreatedAt();
+                        hccScore = base.getHccScore();
+                    } else if (!codingList.isEmpty()) {
+                        workUnit = codingList.get(0).getWorkUnit();
+                    } else {
+                        List<WorkUnit> wus = workUnitRepository.findByFile_Id(file.getId());
+                        if (!wus.isEmpty()) {
+                            workUnit = wus.get(0);
+                        }
+                    }
 
                     List<CodingResultMergeDTO> mergedList = crList.stream()
                             .map(cr -> CodingResultMergeDTO.builder()
@@ -129,7 +170,6 @@ public class AuditorResultService {
                                     .build())
                             .toList();
 
-                    List<CodingResult> codingList = finalCodingResultsByFile.getOrDefault(entry.getKey(), List.of());
                     List<CodingResultMergeDTO> mergedCodingList = codingList.stream()
                             .map(cr -> CodingResultMergeDTO.builder()
                                     .id(cr.getId())
@@ -142,11 +182,11 @@ public class AuditorResultService {
                             .toList();
 
                     return FileAuditorResultsDTO.builder()
-                            .fileRecord(base.getFile())
-                            .workUnit(base.getWorkUnit())
-                            .auditor(base.getAuditor())
-                            .createdAt(base.getCreatedAt())
-                            .hccScore(base.getHccScore())
+                            .fileRecord(file)
+                            .workUnit(workUnit)
+                            .auditor(auditor)
+                            .createdAt(createdAt)
+                            .hccScore(hccScore)
                             .auditorResults(mergedList)
                             .codingResults(mergedCodingList)
                             .build();
