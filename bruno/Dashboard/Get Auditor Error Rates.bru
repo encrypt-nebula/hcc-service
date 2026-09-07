@@ -1,0 +1,15 @@
+meta {
+  name: Get Auditor Error Rates
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{base_url}}/dashboard/auditor-error-rates
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~companyId: 1
+}

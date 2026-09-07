@@ -1,0 +1,19 @@
+meta {
+  name: Get Full Dashboard
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/dashboard
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~userId: 1
+  ~companyId: 1
+  ~projectId: 1
+  ~startDate: 2026-01-01T00:00:00
+  ~endDate: 2026-12-31T23:59:59
+}

@@ -1,0 +1,17 @@
+meta {
+  name: Get Production Trend
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/dashboard/production-trend
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~userId: 1
+  ~companyId: 1
+  ~projectId: 1
+}

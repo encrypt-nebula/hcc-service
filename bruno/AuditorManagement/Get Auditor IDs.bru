@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{base_url}}/users/auditor-ids
+  url: {{base_url}}/users/auditor-ids?companyId=1
   body: none
   auth: bearer
+}
+
+params:query {
+  companyId: 1
 }

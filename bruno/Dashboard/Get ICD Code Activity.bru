@@ -1,0 +1,17 @@
+meta {
+  name: Get ICD Code Activity
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/dashboard/icd-activity
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~userId: 1
+  ~companyId: 1
+  ~projectId: 1
+}

@@ -1,0 +1,17 @@
+meta {
+  name: Get AI vs Coder vs Auditor
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}/dashboard/ai-vs-coder-auditor
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~userId: 1
+  ~companyId: 1
+  ~projectId: 1
+}

@@ -1,0 +1,17 @@
+meta {
+  name: Get Coder Activity Funnel
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/dashboard/funnel
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~userId: 1
+  ~companyId: 1
+  ~projectId: 1
+}
