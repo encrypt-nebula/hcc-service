@@ -24,6 +24,8 @@ public class UserService {
     private final UserMapper userMapper;
     private final AuditorAware<User> auditorAware;
     private final UserMapper responseMapper;
+    private final com.example.hcc.repository.UserLoginLogRepository userLoginLogRepository;
+
 
 
     public User create(User user) {
@@ -87,9 +89,19 @@ public class UserService {
         User user = auditorAware.getCurrentAuditor()
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        try {
+            userLoginLogRepository.save(com.example.hcc.entity.UserLoginLog.builder()
+                    .userId(user.getId())
+                    .build());
+        } catch (Exception ignored) {
+        }
+
         return responseMapper.toDto(user);
     }
-    public List<Long> getAuditorIds() {
+    public List<Long> getAuditorIds(Long companyId) {
+        if (companyId != null) {
+            return repo.findIdsByRoleAndCompanyId(com.example.hcc.enums.Role.AUDITOR, companyId);
+        }
         return repo.findIdsByRole(com.example.hcc.enums.Role.AUDITOR);
     }
 }

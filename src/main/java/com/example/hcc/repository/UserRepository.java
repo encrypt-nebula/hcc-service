@@ -17,5 +17,11 @@ public interface UserRepository extends JpaRepository<User, Long>,
 
     @org.springframework.data.jpa.repository.Query("SELECT u.id FROM User u WHERE u.role = :role")
     java.util.List<Long> findIdsByRole(@org.springframework.data.repository.query.Param("role") com.example.hcc.enums.Role role);
+
+    @org.springframework.data.jpa.repository.Query("SELECT u.id FROM User u WHERE u.role = :role AND u.company.id = :companyId")
+    java.util.List<Long> findIdsByRoleAndCompanyId(
+            @org.springframework.data.repository.query.Param("role") com.example.hcc.enums.Role role,
+            @org.springframework.data.repository.query.Param("companyId") Long companyId
+    );
 }
 

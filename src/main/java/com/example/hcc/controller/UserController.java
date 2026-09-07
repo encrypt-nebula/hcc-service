@@ -52,7 +52,7 @@ public class UserController {
     }
     @GetMapping("/auditor-ids")
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('TL', 'ADMIN', 'SUPER_ADMIN')")
-    public List<Long> getAuditorIds() {
-        return service.getAuditorIds();
+    public List<Long> getAuditorIds(@RequestParam(value = "companyId", required = false) Long companyId) {
+        return service.getAuditorIds(companyId);
     }
 }
