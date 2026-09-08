@@ -25,6 +25,7 @@ public class DashboardService {
     private final CodingResultRepository codingResultRepository;
     private final AuditorResultRepository auditorResultRepository;
     private final UserRepository userRepository;
+    private final ProjectRepository projectRepository;
     private final UserLoginLogRepository userLoginLogRepository;
 
     public DashboardResponseDto getDashboardData(DashboardFilterRequestDto request) {
@@ -74,15 +75,37 @@ public class DashboardService {
         List<CodingResult> allCodingResults = codingResultRepository.findAll();
         List<AuditorResult> allAuditorResults = auditorResultRepository.findAll();
         List<User> allUsers = userRepository.findAll();
+        List<Project> allProjects = projectRepository.findAll();
 
-        DashboardSummaryDto summary = getSummary(allFiles, allWorkUnits, allCodingResults, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        CoderActivityFunnelDto funnel = getCoderActivityFunnel(allWorkUnits, allCodingResults, allUsers, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        List<ProductionTrendDto> trend = getProductionTrend(allFiles, allWorkUnits, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        FileStatusBreakdownDto breakdown = getFileStatusBreakdown(allWorkUnits, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        List<IcdActivityDto> icdActivity = getIcdCodeActivity(allCodingResults, allAuditorResults, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        List<EmployeeProductivityDto> productivity = getEmployeeProductivity(allUsers, allCodingResults, allAuditorResults, effectiveCompanyId, startDate, endDate);
+        // Build fast in-memory lookup maps to eliminate N+1 lazy loading queries completely
+        Map<Long, Long> projectCompanyMap = new HashMap<>();
+        for (Project p : allProjects) {
+            if (p.getId() != null && p.getCreatedBy() != null && p.getCreatedBy().getCompany() != null) {
+                projectCompanyMap.put(p.getId(), p.getCreatedBy().getCompany().getId());
+            }
+        }
+
+        Map<Long, Long> fileProjectMap = new HashMap<>();
+        Map<Long, Long> fileAuditorMap = new HashMap<>();
+        for (FileRecord f : allFiles) {
+            if (f.getId() != null) {
+                if (f.getProject() != null) {
+                    fileProjectMap.put(f.getId(), f.getProject().getId());
+                }
+                if (f.getAuditor() != null) {
+                    fileAuditorMap.put(f.getId(), f.getAuditor().getId());
+                }
+            }
+        }
+
+        DashboardSummaryDto summary = getSummary(allFiles, allWorkUnits, allCodingResults, projectCompanyMap, fileProjectMap, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
+        CoderActivityFunnelDto funnel = getCoderActivityFunnel(allWorkUnits, allCodingResults, allUsers, projectCompanyMap, fileProjectMap, fileAuditorMap, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
+        List<ProductionTrendDto> trend = getProductionTrend(allFiles, allWorkUnits, projectCompanyMap, fileAuditorMap, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
+        FileStatusBreakdownDto breakdown = getFileStatusBreakdown(allWorkUnits, projectCompanyMap, fileAuditorMap, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
+        List<IcdActivityDto> icdActivity = getIcdCodeActivity(allCodingResults, allAuditorResults, projectCompanyMap, fileProjectMap, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
+        List<EmployeeProductivityDto> productivity = getEmployeeProductivity(allUsers, allCodingResults, allAuditorResults, projectCompanyMap, fileProjectMap, effectiveCompanyId, startDate, endDate);
         List<AiVsCoderVsAuditorDto> aiVsCoderAuditor = getAiVsCoderVsAuditor(icdActivity);
-        List<AuditorErrorRateDto> errorRates = getAuditorErrorRates(allUsers, allAuditorResults, allCodingResults, effectiveCompanyId, startDate, endDate);
+        List<AuditorErrorRateDto> errorRates = getAuditorErrorRates(allUsers, allAuditorResults, allCodingResults, projectCompanyMap, fileProjectMap, effectiveCompanyId, startDate, endDate);
 
         return DashboardResponseDto.builder()
                 .summary(summary)
@@ -99,17 +122,20 @@ public class DashboardService {
     public DashboardSummaryDto getSummary(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
+        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAll());
         return getSummary(fileRepository.findAll(), workUnitRepository.findAll(), codingResultRepository.findAll(),
-                userId, role, companyId, projectId, startDate, endDate);
+                projectCompanyMap, fileProjectMap, userId, role, companyId, projectId, startDate, endDate);
     }
 
     public DashboardSummaryDto getSummary(
             List<FileRecord> allFiles, List<WorkUnit> allWorkUnits, List<CodingResult> allCodingResults,
+            Map<Long, Long> projectCompanyMap, Map<Long, Long> fileProjectMap,
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        List<FileRecord> files = filterFiles(allFiles, companyId, projectId, startDate, endDate);
-        List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, userId, role, companyId, projectId, startDate, endDate);
-        List<CodingResult> codingResults = filterCodingResults(allCodingResults, userId, role, companyId, projectId, startDate, endDate);
+        List<FileRecord> files = filterFiles(allFiles, projectCompanyMap, companyId, projectId, startDate, endDate);
+        List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, projectCompanyMap, Collections.emptyMap(), userId, role, companyId, projectId, startDate, endDate);
+        List<CodingResult> codingResults = filterCodingResults(allCodingResults, projectCompanyMap, fileProjectMap, userId, role, companyId, projectId, startDate, endDate);
 
         long totalUploaded = files.size();
         long totalAssigned = workUnits.stream().filter(w -> w.getStatus() == WorkUnitStatus.ASSIGNED || w.getStatus() == WorkUnitStatus.IN_PROGRESS || w.getStatus() == WorkUnitStatus.COMPLETED).count();
@@ -133,12 +159,16 @@ public class DashboardService {
     public CoderActivityFunnelDto getCoderActivityFunnel(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
+        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAll());
+        Map<Long, Long> fileAuditorMap = buildFileAuditorMap(fileRepository.findAll());
         return getCoderActivityFunnel(workUnitRepository.findAll(), codingResultRepository.findAll(), userRepository.findAll(),
-                userId, role, companyId, projectId, startDate, endDate);
+                projectCompanyMap, fileProjectMap, fileAuditorMap, userId, role, companyId, projectId, startDate, endDate);
     }
 
     public CoderActivityFunnelDto getCoderActivityFunnel(
             List<WorkUnit> allWorkUnits, List<CodingResult> allCodingResults, List<User> allUsers,
+            Map<Long, Long> projectCompanyMap, Map<Long, Long> fileProjectMap, Map<Long, Long> fileAuditorMap,
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
         long logins = 0;
@@ -156,8 +186,8 @@ public class DashboardService {
             }
         }
 
-        List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, userId, role, companyId, projectId, startDate, endDate);
-        List<CodingResult> codingResults = filterCodingResults(allCodingResults, userId, role, companyId, projectId, startDate, endDate);
+        List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, projectCompanyMap, fileAuditorMap, userId, role, companyId, projectId, startDate, endDate);
+        List<CodingResult> codingResults = filterCodingResults(allCodingResults, projectCompanyMap, fileProjectMap, userId, role, companyId, projectId, startDate, endDate);
 
         long assigned = workUnits.stream().filter(w -> w.getStatus() != WorkUnitStatus.UNASSIGNED).count();
         long submitted = codingResults.size();
@@ -174,15 +204,18 @@ public class DashboardService {
     public List<ProductionTrendDto> getProductionTrend(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        return getProductionTrend(fileRepository.findAll(), workUnitRepository.findAll(), userId, role, companyId, projectId, startDate, endDate);
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
+        Map<Long, Long> fileAuditorMap = buildFileAuditorMap(fileRepository.findAll());
+        return getProductionTrend(fileRepository.findAll(), workUnitRepository.findAll(), projectCompanyMap, fileAuditorMap, userId, role, companyId, projectId, startDate, endDate);
     }
 
     public List<ProductionTrendDto> getProductionTrend(
             List<FileRecord> allFiles, List<WorkUnit> allWorkUnits,
+            Map<Long, Long> projectCompanyMap, Map<Long, Long> fileAuditorMap,
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        List<FileRecord> files = filterFiles(allFiles, companyId, projectId, startDate, endDate);
-        List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, userId, role, companyId, projectId, startDate, endDate);
+        List<FileRecord> files = filterFiles(allFiles, projectCompanyMap, companyId, projectId, startDate, endDate);
+        List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, projectCompanyMap, fileAuditorMap, userId, role, companyId, projectId, startDate, endDate);
 
         List<YearMonth> monthsInRange = generateMonthsInRange(startDate, endDate);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
@@ -210,14 +243,17 @@ public class DashboardService {
     public FileStatusBreakdownDto getFileStatusBreakdown(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        return getFileStatusBreakdown(workUnitRepository.findAll(), userId, role, companyId, projectId, startDate, endDate);
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
+        Map<Long, Long> fileAuditorMap = buildFileAuditorMap(fileRepository.findAll());
+        return getFileStatusBreakdown(workUnitRepository.findAll(), projectCompanyMap, fileAuditorMap, userId, role, companyId, projectId, startDate, endDate);
     }
 
     public FileStatusBreakdownDto getFileStatusBreakdown(
             List<WorkUnit> allWorkUnits,
+            Map<Long, Long> projectCompanyMap, Map<Long, Long> fileAuditorMap,
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, userId, role, companyId, projectId, startDate, endDate);
+        List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, projectCompanyMap, fileAuditorMap, userId, role, companyId, projectId, startDate, endDate);
         long total = workUnits.size();
         long completed = workUnits.stream().filter(w -> w.getStatus() == WorkUnitStatus.COMPLETED).count();
         long pending = total - completed;
@@ -232,16 +268,19 @@ public class DashboardService {
     public List<IcdActivityDto> getIcdCodeActivity(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
+        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAll());
         return getIcdCodeActivity(codingResultRepository.findAll(), auditorResultRepository.findAll(),
-                userId, role, companyId, projectId, startDate, endDate);
+                projectCompanyMap, fileProjectMap, userId, role, companyId, projectId, startDate, endDate);
     }
 
     public List<IcdActivityDto> getIcdCodeActivity(
             List<CodingResult> allCodingResults, List<AuditorResult> allAuditorResults,
+            Map<Long, Long> projectCompanyMap, Map<Long, Long> fileProjectMap,
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        List<CodingResult> codingResults = filterCodingResults(allCodingResults, userId, role, companyId, projectId, startDate, endDate);
-        List<AuditorResult> auditorResults = filterAuditorResults(allAuditorResults, userId, role, companyId, startDate, endDate);
+        List<CodingResult> codingResults = filterCodingResults(allCodingResults, projectCompanyMap, fileProjectMap, userId, role, companyId, projectId, startDate, endDate);
+        List<AuditorResult> auditorResults = filterAuditorResults(allAuditorResults, projectCompanyMap, fileProjectMap, userId, role, companyId, startDate, endDate);
 
         List<YearMonth> monthsInRange = generateMonthsInRange(startDate, endDate);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
@@ -282,12 +321,15 @@ public class DashboardService {
     }
 
     public List<EmployeeProductivityDto> getEmployeeProductivity(Long companyId, LocalDateTime startDate, LocalDateTime endDate) {
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
+        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAll());
         return getEmployeeProductivity(userRepository.findAll(), codingResultRepository.findAll(), auditorResultRepository.findAll(),
-                companyId, startDate, endDate);
+                projectCompanyMap, fileProjectMap, companyId, startDate, endDate);
     }
 
     public List<EmployeeProductivityDto> getEmployeeProductivity(
             List<User> allUsers, List<CodingResult> allCodingResults, List<AuditorResult> allAuditorResults,
+            Map<Long, Long> projectCompanyMap, Map<Long, Long> fileProjectMap,
             Long companyId, LocalDateTime startDate, LocalDateTime endDate
     ) {
         List<User> users = allUsers;
@@ -295,8 +337,8 @@ public class DashboardService {
             users = users.stream().filter(u -> u.getCompany() != null && u.getCompany().getId().equals(companyId)).collect(Collectors.toList());
         }
 
-        List<CodingResult> codingResults = filterCodingResults(allCodingResults, null, Role.ADMIN, companyId, null, startDate, endDate);
-        List<AuditorResult> auditorResults = filterAuditorResults(allAuditorResults, null, Role.ADMIN, companyId, startDate, endDate);
+        List<CodingResult> codingResults = filterCodingResults(allCodingResults, projectCompanyMap, fileProjectMap, null, Role.ADMIN, companyId, null, startDate, endDate);
+        List<AuditorResult> auditorResults = filterAuditorResults(allAuditorResults, projectCompanyMap, fileProjectMap, null, Role.ADMIN, companyId, startDate, endDate);
 
         Map<Long, Long> coderCounts = codingResults.stream()
                 .filter(cr -> cr.getCoder() != null && cr.getCoder().getId() != null)
@@ -338,12 +380,15 @@ public class DashboardService {
     }
 
     public List<AuditorErrorRateDto> getAuditorErrorRates(Long companyId, LocalDateTime startDate, LocalDateTime endDate) {
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
+        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAll());
         return getAuditorErrorRates(userRepository.findAll(), auditorResultRepository.findAll(), codingResultRepository.findAll(),
-                companyId, startDate, endDate);
+                projectCompanyMap, fileProjectMap, companyId, startDate, endDate);
     }
 
     public List<AuditorErrorRateDto> getAuditorErrorRates(
             List<User> allUsers, List<AuditorResult> allAuditorResults, List<CodingResult> allCodingResults,
+            Map<Long, Long> projectCompanyMap, Map<Long, Long> fileProjectMap,
             Long companyId, LocalDateTime startDate, LocalDateTime endDate
     ) {
         List<User> auditors = allUsers.stream().filter(u -> u.getRole() == Role.AUDITOR).collect(Collectors.toList());
@@ -351,8 +396,8 @@ public class DashboardService {
             auditors = auditors.stream().filter(u -> u.getCompany() != null && u.getCompany().getId().equals(companyId)).collect(Collectors.toList());
         }
 
-        List<AuditorResult> auditorResults = filterAuditorResults(allAuditorResults, null, Role.ADMIN, companyId, startDate, endDate);
-        List<CodingResult> codingResults = filterCodingResults(allCodingResults, null, Role.ADMIN, companyId, null, startDate, endDate);
+        List<AuditorResult> auditorResults = filterAuditorResults(allAuditorResults, projectCompanyMap, fileProjectMap, null, Role.ADMIN, companyId, startDate, endDate);
+        List<CodingResult> codingResults = filterCodingResults(allCodingResults, projectCompanyMap, fileProjectMap, null, Role.ADMIN, companyId, null, startDate, endDate);
 
         Map<Long, CodingResult> codingResultMap = codingResults.stream()
                 .filter(cr -> cr.getWorkUnit() != null)
@@ -411,26 +456,67 @@ public class DashboardService {
         return months;
     }
 
-    // Helper filter methods
-    private List<FileRecord> filterFiles(List<FileRecord> files, Long companyId, Long projectId, LocalDateTime start, LocalDateTime end) {
+    // Helper map builders
+    private Map<Long, Long> buildProjectCompanyMap(List<Project> projects) {
+        Map<Long, Long> map = new HashMap<>();
+        for (Project p : projects) {
+            if (p.getId() != null && p.getCreatedBy() != null && p.getCreatedBy().getCompany() != null) {
+                map.put(p.getId(), p.getCreatedBy().getCompany().getId());
+            }
+        }
+        return map;
+    }
+
+    private Map<Long, Long> buildFileProjectMap(List<FileRecord> files) {
+        Map<Long, Long> map = new HashMap<>();
+        for (FileRecord f : files) {
+            if (f.getId() != null && f.getProject() != null) {
+                map.put(f.getId(), f.getProject().getId());
+            }
+        }
+        return map;
+    }
+
+    private Map<Long, Long> buildFileAuditorMap(List<FileRecord> files) {
+        Map<Long, Long> map = new HashMap<>();
+        for (FileRecord f : files) {
+            if (f.getId() != null && f.getAuditor() != null) {
+                map.put(f.getId(), f.getAuditor().getId());
+            }
+        }
+        return map;
+    }
+
+    // High-performance filter methods (0 additional N+1 SQL queries)
+    private List<FileRecord> filterFiles(List<FileRecord> files, Map<Long, Long> projectCompanyMap, Long companyId, Long projectId, LocalDateTime start, LocalDateTime end) {
         return files.stream().filter(f -> {
-            if (companyId != null && (f.getProject() == null || f.getProject().getCreatedBy() == null || f.getProject().getCreatedBy().getCompany() == null || !companyId.equals(f.getProject().getCreatedBy().getCompany().getId()))) return false;
-            if (projectId != null && (f.getProject() == null || !projectId.equals(f.getProject().getId()))) return false;
+            Long pId = (f.getProject() != null) ? f.getProject().getId() : null;
+            if (companyId != null) {
+                Long cId = (pId != null) ? projectCompanyMap.get(pId) : null;
+                if (cId == null || !companyId.equals(cId)) return false;
+            }
+            if (projectId != null && (pId == null || !projectId.equals(pId))) return false;
             if (start != null && f.getCreatedAt() != null && f.getCreatedAt().isBefore(start)) return false;
             if (end != null && f.getCreatedAt() != null && f.getCreatedAt().isAfter(end)) return false;
             return true;
         }).collect(Collectors.toList());
     }
 
-    private List<WorkUnit> filterWorkUnits(List<WorkUnit> units, Long userId, Role role, Long companyId, Long projectId, LocalDateTime start, LocalDateTime end) {
+    private List<WorkUnit> filterWorkUnits(List<WorkUnit> units, Map<Long, Long> projectCompanyMap, Map<Long, Long> fileAuditorMap, Long userId, Role role, Long companyId, Long projectId, LocalDateTime start, LocalDateTime end) {
         return units.stream().filter(w -> {
-            if (companyId != null && (w.getProject() == null || w.getProject().getCreatedBy() == null || w.getProject().getCreatedBy().getCompany() == null || !companyId.equals(w.getProject().getCreatedBy().getCompany().getId()))) return false;
-            if (projectId != null && (w.getProject() == null || !projectId.equals(w.getProject().getId()))) return false;
+            Long pId = (w.getProject() != null) ? w.getProject().getId() : null;
+            if (companyId != null) {
+                Long cId = (pId != null) ? projectCompanyMap.get(pId) : null;
+                if (cId == null || !companyId.equals(cId)) return false;
+            }
+            if (projectId != null && (pId == null || !projectId.equals(pId))) return false;
             if (role == Role.CODER && userId != null) {
                 if (w.getAssignedTo() == null || !w.getAssignedTo().contains("\"id\":" + userId)) return false;
             }
             if (role == Role.AUDITOR && userId != null) {
-                if (w.getFile() == null || w.getFile().getAuditor() == null || !userId.equals(w.getFile().getAuditor().getId())) return false;
+                Long fId = (w.getFile() != null) ? w.getFile().getId() : null;
+                Long auditorId = (fId != null) ? fileAuditorMap.get(fId) : null;
+                if (auditorId == null || !userId.equals(auditorId)) return false;
             }
             if (start != null && w.getCreatedAt() != null && w.getCreatedAt().isBefore(start)) return false;
             if (end != null && w.getCreatedAt() != null && w.getCreatedAt().isAfter(end)) return false;
@@ -438,25 +524,37 @@ public class DashboardService {
         }).collect(Collectors.toList());
     }
 
-    private List<CodingResult> filterCodingResults(List<CodingResult> results, Long userId, Role role, Long companyId, Long projectId, LocalDateTime start, LocalDateTime end) {
+    private List<CodingResult> filterCodingResults(List<CodingResult> results, Map<Long, Long> projectCompanyMap, Map<Long, Long> fileProjectMap, Long userId, Role role, Long companyId, Long projectId, LocalDateTime start, LocalDateTime end) {
         return results.stream().filter(cr -> {
             if (role == Role.CODER && userId != null) {
-                if (cr.getCoder() == null || !userId.equals(cr.getCoder().getId())) return false;
+                Long coderId = (cr.getCoder() != null) ? cr.getCoder().getId() : null;
+                if (coderId == null || !userId.equals(coderId)) return false;
             }
-            if (companyId != null && (cr.getFile() == null || cr.getFile().getProject() == null || cr.getFile().getProject().getCreatedBy() == null || cr.getFile().getProject().getCreatedBy().getCompany() == null || !companyId.equals(cr.getFile().getProject().getCreatedBy().getCompany().getId()))) return false;
-            if (projectId != null && (cr.getFile() == null || cr.getFile().getProject() == null || !projectId.equals(cr.getFile().getProject().getId()))) return false;
+            Long fId = (cr.getFile() != null) ? cr.getFile().getId() : null;
+            Long pId = (fId != null) ? fileProjectMap.get(fId) : null;
+            if (companyId != null) {
+                Long cId = (pId != null) ? projectCompanyMap.get(pId) : null;
+                if (cId == null || !companyId.equals(cId)) return false;
+            }
+            if (projectId != null && (pId == null || !projectId.equals(pId))) return false;
             if (start != null && cr.getCreatedAt() != null && cr.getCreatedAt().isBefore(start)) return false;
             if (end != null && cr.getCreatedAt() != null && cr.getCreatedAt().isAfter(end)) return false;
             return true;
         }).collect(Collectors.toList());
     }
 
-    private List<AuditorResult> filterAuditorResults(List<AuditorResult> results, Long userId, Role role, Long companyId, LocalDateTime start, LocalDateTime end) {
+    private List<AuditorResult> filterAuditorResults(List<AuditorResult> results, Map<Long, Long> projectCompanyMap, Map<Long, Long> fileProjectMap, Long userId, Role role, Long companyId, LocalDateTime start, LocalDateTime end) {
         return results.stream().filter(ar -> {
             if (role == Role.AUDITOR && userId != null) {
-                if (ar.getAuditor() == null || !userId.equals(ar.getAuditor().getId())) return false;
+                Long auditorId = (ar.getAuditor() != null) ? ar.getAuditor().getId() : null;
+                if (auditorId == null || !userId.equals(auditorId)) return false;
             }
-            if (companyId != null && (ar.getFile() == null || ar.getFile().getProject() == null || ar.getFile().getProject().getCreatedBy() == null || ar.getFile().getProject().getCreatedBy().getCompany() == null || !companyId.equals(ar.getFile().getProject().getCreatedBy().getCompany().getId()))) return false;
+            Long fId = (ar.getFile() != null) ? ar.getFile().getId() : null;
+            Long pId = (fId != null) ? fileProjectMap.get(fId) : null;
+            if (companyId != null) {
+                Long cId = (pId != null) ? projectCompanyMap.get(pId) : null;
+                if (cId == null || !companyId.equals(cId)) return false;
+            }
             if (start != null && ar.getCreatedAt() != null && ar.getCreatedAt().isBefore(start)) return false;
             if (end != null && ar.getCreatedAt() != null && ar.getCreatedAt().isAfter(end)) return false;
             return true;
