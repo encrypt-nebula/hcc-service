@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -155,31 +156,24 @@ public class DashboardService {
         List<FileRecord> files = filterFiles(fileRepository.findAll(), companyId, projectId, startDate, endDate);
         List<WorkUnit> workUnits = filterWorkUnits(workUnitRepository.findAll(), userId, role, companyId, projectId, startDate, endDate);
 
+        List<YearMonth> monthsInRange = generateMonthsInRange(startDate, endDate);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
 
-        Map<String, Long> uploadedByMonth = files.stream()
+        Map<YearMonth, Long> uploadedByMonth = files.stream()
                 .filter(f -> f.getCreatedAt() != null)
-                .collect(Collectors.groupingBy(f -> f.getCreatedAt().format(formatter), Collectors.counting()));
+                .collect(Collectors.groupingBy(f -> YearMonth.from(f.getCreatedAt()), Collectors.counting()));
 
-        Map<String, Long> completedByMonth = workUnits.stream()
+        Map<YearMonth, Long> completedByMonth = workUnits.stream()
                 .filter(w -> w.getStatus() == WorkUnitStatus.COMPLETED && w.getCreatedAt() != null)
-                .collect(Collectors.groupingBy(w -> w.getCreatedAt().format(formatter), Collectors.counting()));
-
-        Set<String> allMonths = new TreeSet<>(uploadedByMonth.keySet());
-        allMonths.addAll(completedByMonth.keySet());
+                .collect(Collectors.groupingBy(w -> YearMonth.from(w.getCreatedAt()), Collectors.counting()));
 
         List<ProductionTrendDto> result = new ArrayList<>();
-        for (String month : allMonths) {
+        for (YearMonth ym : monthsInRange) {
             result.add(ProductionTrendDto.builder()
-                    .month(month)
-                    .uploaded(uploadedByMonth.getOrDefault(month, 0L))
-                    .completed(completedByMonth.getOrDefault(month, 0L))
+                    .month(ym.format(formatter))
+                    .uploaded(uploadedByMonth.getOrDefault(ym, 0L))
+                    .completed(completedByMonth.getOrDefault(ym, 0L))
                     .build());
-        }
-
-        if (result.isEmpty()) {
-            String currentMonth = LocalDateTime.now().format(formatter);
-            result.add(new ProductionTrendDto(currentMonth, 0, 0));
         }
 
         return result;
@@ -206,47 +200,39 @@ public class DashboardService {
         List<CodingResult> codingResults = filterCodingResults(codingResultRepository.findAll(), userId, role, companyId, projectId, startDate, endDate);
         List<AuditorResult> auditorResults = filterAuditorResults(auditorResultRepository.findAll(), userId, role, companyId, startDate, endDate);
 
+        List<YearMonth> monthsInRange = generateMonthsInRange(startDate, endDate);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
 
-        Map<String, Long> diagnosedMap = new HashMap<>();
-        Map<String, Long> submittedMap = new HashMap<>();
-        Map<String, Long> auditorVerifiedMap = new HashMap<>();
+        Map<YearMonth, Long> diagnosedMap = new HashMap<>();
+        Map<YearMonth, Long> submittedMap = new HashMap<>();
+        Map<YearMonth, Long> auditorVerifiedMap = new HashMap<>();
 
         for (CodingResult cr : codingResults) {
             if (cr.getCreatedAt() == null) continue;
-            String month = cr.getCreatedAt().format(formatter);
+            YearMonth ym = YearMonth.from(cr.getCreatedAt());
 
             long aiCount = (cr.getAiIcdCode() != null) ? cr.getAiIcdCode().size() : 0;
             long submittedCount = (cr.getSubmittedIcdCode() != null) ? cr.getSubmittedIcdCode().size() : 0;
 
-            diagnosedMap.put(month, diagnosedMap.getOrDefault(month, 0L) + aiCount);
-            submittedMap.put(month, submittedMap.getOrDefault(month, 0L) + submittedCount);
+            diagnosedMap.put(ym, diagnosedMap.getOrDefault(ym, 0L) + aiCount);
+            submittedMap.put(ym, submittedMap.getOrDefault(ym, 0L) + submittedCount);
         }
 
         for (AuditorResult ar : auditorResults) {
             if (ar.getCreatedAt() == null) continue;
-            String month = ar.getCreatedAt().format(formatter);
+            YearMonth ym = YearMonth.from(ar.getCreatedAt());
             long verifiedCount = (ar.getSubmittedIcdCode() != null) ? ar.getSubmittedIcdCode().size() : 0;
-            auditorVerifiedMap.put(month, auditorVerifiedMap.getOrDefault(month, 0L) + verifiedCount);
+            auditorVerifiedMap.put(ym, auditorVerifiedMap.getOrDefault(ym, 0L) + verifiedCount);
         }
-
-        Set<String> allMonths = new TreeSet<>(diagnosedMap.keySet());
-        allMonths.addAll(submittedMap.keySet());
-        allMonths.addAll(auditorVerifiedMap.keySet());
 
         List<IcdActivityDto> result = new ArrayList<>();
-        for (String month : allMonths) {
+        for (YearMonth ym : monthsInRange) {
             result.add(IcdActivityDto.builder()
-                    .month(month)
-                    .diagnosed(diagnosedMap.getOrDefault(month, 0L))
-                    .submitted(submittedMap.getOrDefault(month, 0L))
-                    .auditorVerified(auditorVerifiedMap.getOrDefault(month, 0L))
+                    .month(ym.format(formatter))
+                    .diagnosed(diagnosedMap.getOrDefault(ym, 0L))
+                    .submitted(submittedMap.getOrDefault(ym, 0L))
+                    .auditorVerified(auditorVerifiedMap.getOrDefault(ym, 0L))
                     .build());
-        }
-
-        if (result.isEmpty()) {
-            String currentMonth = LocalDateTime.now().format(formatter);
-            result.add(new IcdActivityDto(currentMonth, 0, 0, 0));
         }
 
         return result;
@@ -342,6 +328,24 @@ public class DashboardService {
         }
 
         return errorRates;
+    }
+
+    private List<YearMonth> generateMonthsInRange(LocalDateTime startDate, LocalDateTime endDate) {
+        if (startDate == null) {
+            startDate = LocalDateTime.now().minusDays(30);
+        }
+        if (endDate == null) {
+            endDate = LocalDateTime.now();
+        }
+
+        List<YearMonth> months = new ArrayList<>();
+        YearMonth startYM = YearMonth.from(startDate);
+        YearMonth endYM = YearMonth.from(endDate);
+        while (!startYM.isAfter(endYM)) {
+            months.add(startYM);
+            startYM = startYM.plusMonths(1);
+        }
+        return months;
     }
 
     // Helper filter methods
