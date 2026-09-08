@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CodingResultRepository extends JpaRepository<CodingResult, Long> {
@@ -17,7 +18,6 @@ public interface CodingResultRepository extends JpaRepository<CodingResult, Long
     """)
     List<Object[]> getRafScorePerWorkUnit();
 
-    //List<CodingResult> findByWorkUnit_AssignedTo_Id(Long userId);
     @Query(value = """
     SELECT cr.*
     FROM coding_results cr
@@ -38,7 +38,9 @@ public interface CodingResultRepository extends JpaRepository<CodingResult, Long
     List<CodingResult> findByFileIdIn(List<Long> fileIds);
 
     @EntityGraph(attributePaths = {"file", "coder", "workUnit"})
-    @Query("SELECT cr FROM CodingResult cr")
-    List<CodingResult> findAllWithRelations();
+    @Query("SELECT cr FROM CodingResult cr WHERE (:startDate IS NULL OR cr.createdAt >= :startDate) AND (:endDate IS NULL OR cr.createdAt <= :endDate)")
+    List<CodingResult> findAllWithRelations(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 }
-

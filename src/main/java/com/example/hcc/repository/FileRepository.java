@@ -4,7 +4,9 @@ import com.example.hcc.entity.FileRecord;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.List;
 
@@ -13,7 +15,9 @@ public interface FileRepository extends JpaRepository<FileRecord, Long> {
     List<FileRecord> findByAuditor_Id(Long auditorId);
 
     @EntityGraph(attributePaths = {"project", "auditor"})
-    @Query("SELECT f FROM FileRecord f")
-    List<FileRecord> findAllWithProjectAndAuditor();
+    @Query("SELECT f FROM FileRecord f WHERE (:startDate IS NULL OR f.createdAt >= :startDate) AND (:endDate IS NULL OR f.createdAt <= :endDate)")
+    List<FileRecord> findAllWithProjectAndAuditor(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 }
-
