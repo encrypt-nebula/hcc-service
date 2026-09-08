@@ -69,15 +69,15 @@ public class DashboardService {
             }
         }
 
-        // Fetch each entity table ONCE for the entire dashboard request
-        List<FileRecord> allFiles = fileRepository.findAll();
-        List<WorkUnit> allWorkUnits = workUnitRepository.findAll();
-        List<CodingResult> allCodingResults = codingResultRepository.findAll();
-        List<AuditorResult> allAuditorResults = auditorResultRepository.findAll();
-        List<User> allUsers = userRepository.findAll();
-        List<Project> allProjects = projectRepository.findAll();
+        // Fetch each entity table ONCE with eager JOIN FETCH (zero N+1 queries)
+        List<FileRecord> allFiles = fileRepository.findAllWithProjectAndAuditor();
+        List<WorkUnit> allWorkUnits = workUnitRepository.findAllWithProjectAndFile();
+        List<CodingResult> allCodingResults = codingResultRepository.findAllWithRelations();
+        List<AuditorResult> allAuditorResults = auditorResultRepository.findAllWithRelations();
+        List<User> allUsers = userRepository.findAllWithCompany();
+        List<Project> allProjects = projectRepository.findAllWithCreatedByAndCompany();
 
-        // Build fast in-memory lookup maps to eliminate N+1 lazy loading queries completely
+        // Build fast in-memory lookup maps (no lazy loading possible - everything is already fetched)
         Map<Long, Long> projectCompanyMap = new HashMap<>();
         for (Project p : allProjects) {
             if (p.getId() != null && p.getCreatedBy() != null && p.getCreatedBy().getCompany() != null) {
@@ -97,6 +97,7 @@ public class DashboardService {
                 }
             }
         }
+
 
         DashboardSummaryDto summary = getSummary(allFiles, allWorkUnits, allCodingResults, projectCompanyMap, fileProjectMap, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
         CoderActivityFunnelDto funnel = getCoderActivityFunnel(allWorkUnits, allCodingResults, allUsers, projectCompanyMap, fileProjectMap, fileAuditorMap, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
@@ -122,9 +123,9 @@ public class DashboardService {
     public DashboardSummaryDto getSummary(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
-        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAll());
-        return getSummary(fileRepository.findAll(), workUnitRepository.findAll(), codingResultRepository.findAll(),
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAllWithCreatedByAndCompany());
+        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAllWithProjectAndAuditor());
+        return getSummary(fileRepository.findAllWithProjectAndAuditor(), workUnitRepository.findAllWithProjectAndFile(), codingResultRepository.findAllWithRelations(),
                 projectCompanyMap, fileProjectMap, userId, role, companyId, projectId, startDate, endDate);
     }
 
@@ -159,10 +160,10 @@ public class DashboardService {
     public CoderActivityFunnelDto getCoderActivityFunnel(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
-        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAll());
-        Map<Long, Long> fileAuditorMap = buildFileAuditorMap(fileRepository.findAll());
-        return getCoderActivityFunnel(workUnitRepository.findAll(), codingResultRepository.findAll(), userRepository.findAll(),
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAllWithCreatedByAndCompany());
+        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAllWithProjectAndAuditor());
+        Map<Long, Long> fileAuditorMap = buildFileAuditorMap(fileRepository.findAllWithProjectAndAuditor());
+        return getCoderActivityFunnel(workUnitRepository.findAllWithProjectAndFile(), codingResultRepository.findAllWithRelations(), userRepository.findAllWithCompany(),
                 projectCompanyMap, fileProjectMap, fileAuditorMap, userId, role, companyId, projectId, startDate, endDate);
     }
 
@@ -204,9 +205,9 @@ public class DashboardService {
     public List<ProductionTrendDto> getProductionTrend(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
-        Map<Long, Long> fileAuditorMap = buildFileAuditorMap(fileRepository.findAll());
-        return getProductionTrend(fileRepository.findAll(), workUnitRepository.findAll(), projectCompanyMap, fileAuditorMap, userId, role, companyId, projectId, startDate, endDate);
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAllWithCreatedByAndCompany());
+        Map<Long, Long> fileAuditorMap = buildFileAuditorMap(fileRepository.findAllWithProjectAndAuditor());
+        return getProductionTrend(fileRepository.findAllWithProjectAndAuditor(), workUnitRepository.findAllWithProjectAndFile(), projectCompanyMap, fileAuditorMap, userId, role, companyId, projectId, startDate, endDate);
     }
 
     public List<ProductionTrendDto> getProductionTrend(
@@ -243,9 +244,9 @@ public class DashboardService {
     public FileStatusBreakdownDto getFileStatusBreakdown(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
-        Map<Long, Long> fileAuditorMap = buildFileAuditorMap(fileRepository.findAll());
-        return getFileStatusBreakdown(workUnitRepository.findAll(), projectCompanyMap, fileAuditorMap, userId, role, companyId, projectId, startDate, endDate);
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAllWithCreatedByAndCompany());
+        Map<Long, Long> fileAuditorMap = buildFileAuditorMap(fileRepository.findAllWithProjectAndAuditor());
+        return getFileStatusBreakdown(workUnitRepository.findAllWithProjectAndFile(), projectCompanyMap, fileAuditorMap, userId, role, companyId, projectId, startDate, endDate);
     }
 
     public FileStatusBreakdownDto getFileStatusBreakdown(
@@ -268,9 +269,9 @@ public class DashboardService {
     public List<IcdActivityDto> getIcdCodeActivity(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
-        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAll());
-        return getIcdCodeActivity(codingResultRepository.findAll(), auditorResultRepository.findAll(),
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAllWithCreatedByAndCompany());
+        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAllWithProjectAndAuditor());
+        return getIcdCodeActivity(codingResultRepository.findAllWithRelations(), auditorResultRepository.findAllWithRelations(),
                 projectCompanyMap, fileProjectMap, userId, role, companyId, projectId, startDate, endDate);
     }
 
@@ -321,9 +322,9 @@ public class DashboardService {
     }
 
     public List<EmployeeProductivityDto> getEmployeeProductivity(Long companyId, LocalDateTime startDate, LocalDateTime endDate) {
-        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
-        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAll());
-        return getEmployeeProductivity(userRepository.findAll(), codingResultRepository.findAll(), auditorResultRepository.findAll(),
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAllWithCreatedByAndCompany());
+        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAllWithProjectAndAuditor());
+        return getEmployeeProductivity(userRepository.findAllWithCompany(), codingResultRepository.findAllWithRelations(), auditorResultRepository.findAllWithRelations(),
                 projectCompanyMap, fileProjectMap, companyId, startDate, endDate);
     }
 
@@ -380,9 +381,9 @@ public class DashboardService {
     }
 
     public List<AuditorErrorRateDto> getAuditorErrorRates(Long companyId, LocalDateTime startDate, LocalDateTime endDate) {
-        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAll());
-        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAll());
-        return getAuditorErrorRates(userRepository.findAll(), auditorResultRepository.findAll(), codingResultRepository.findAll(),
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAllWithCreatedByAndCompany());
+        Map<Long, Long> fileProjectMap = buildFileProjectMap(fileRepository.findAllWithProjectAndAuditor());
+        return getAuditorErrorRates(userRepository.findAllWithCompany(), auditorResultRepository.findAllWithRelations(), codingResultRepository.findAllWithRelations(),
                 projectCompanyMap, fileProjectMap, companyId, startDate, endDate);
     }
 

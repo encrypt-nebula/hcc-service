@@ -1,6 +1,7 @@
 package com.example.hcc.repository;
 
 import com.example.hcc.entity.CodingResult;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,4 +36,9 @@ public interface CodingResultRepository extends JpaRepository<CodingResult, Long
 
     java.util.Optional<CodingResult> findByWorkUnitId(Long workUnitId);
     List<CodingResult> findByFileIdIn(List<Long> fileIds);
+
+    @EntityGraph(attributePaths = {"file", "coder", "workUnit"})
+    @Query("SELECT cr FROM CodingResult cr")
+    List<CodingResult> findAllWithRelations();
 }
+

@@ -2,6 +2,7 @@ package com.example.hcc.repository;
 
 import com.example.hcc.entity.Project;
 import com.example.hcc.enums.Status;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -28,5 +29,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     List<Project> findByCreatedBy_Company_Id(Long companyId);
 
+    @EntityGraph(attributePaths = {"createdBy", "createdBy.company"})
+    @Query("SELECT p FROM Project p")
+    List<Project> findAllWithCreatedByAndCompany();
 }
-

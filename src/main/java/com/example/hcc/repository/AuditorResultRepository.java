@@ -1,7 +1,9 @@
 package com.example.hcc.repository;
 
 import com.example.hcc.entity.AuditorResult;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -13,4 +15,9 @@ public interface AuditorResultRepository extends JpaRepository<AuditorResult, Lo
     Optional<AuditorResult> findByFileId(Long fileId);
     List<AuditorResult> findByAuditor_Id(Long auditorId);
     List<AuditorResult> findByFileIdIn(List<Long> fileIds);
+
+    @EntityGraph(attributePaths = {"file", "auditor", "workUnit"})
+    @Query("SELECT ar FROM AuditorResult ar")
+    List<AuditorResult> findAllWithRelations();
 }
+
