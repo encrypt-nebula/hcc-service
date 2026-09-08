@@ -4,12 +4,16 @@ meta {
   seq: 7
 }
 
-get {
+post {
   url: {{base_url}}/dashboard/productivity
-  body: none
+  body: json
   auth: inherit
 }
 
-params:query {
-  ~companyId: 1
+body:json {
+  {
+    "companyId": 1,
+    "startDate": "2026-01-01T00:00:00",
+    "endDate": "2026-12-31T23:59:59"
+  }
 }

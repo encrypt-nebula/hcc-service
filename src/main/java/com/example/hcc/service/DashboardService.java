@@ -26,6 +26,19 @@ public class DashboardService {
     private final UserRepository userRepository;
     private final UserLoginLogRepository userLoginLogRepository;
 
+    public DashboardResponseDto getDashboardData(DashboardFilterRequestDto request) {
+        if (request == null) {
+            request = new DashboardFilterRequestDto();
+        }
+        return getDashboardData(
+                request.getUserId(),
+                request.getCompanyId(),
+                request.getProjectId(),
+                request.getStartDate(),
+                request.getEndDate()
+        );
+    }
+
     public DashboardResponseDto getDashboardData(
             Long userId,
             Long companyId,
@@ -57,11 +70,11 @@ public class DashboardService {
         DashboardSummaryDto summary = getSummary(userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
         CoderActivityFunnelDto funnel = getCoderActivityFunnel(userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
         List<ProductionTrendDto> trend = getProductionTrend(userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        FileStatusBreakdownDto breakdown = getFileStatusBreakdown(userId, effectiveRole, effectiveCompanyId, projectId);
+        FileStatusBreakdownDto breakdown = getFileStatusBreakdown(userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
         List<IcdActivityDto> icdActivity = getIcdCodeActivity(userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        List<EmployeeProductivityDto> productivity = getEmployeeProductivity(effectiveCompanyId);
+        List<EmployeeProductivityDto> productivity = getEmployeeProductivity(effectiveCompanyId, startDate, endDate);
         List<AiVsCoderVsAuditorDto> aiVsCoderAuditor = getAiVsCoderVsAuditor(userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        List<AuditorErrorRateDto> errorRates = getAuditorErrorRates(effectiveCompanyId);
+        List<AuditorErrorRateDto> errorRates = getAuditorErrorRates(effectiveCompanyId, startDate, endDate);
 
         return DashboardResponseDto.builder()
                 .summary(summary)
@@ -173,9 +186,9 @@ public class DashboardService {
     }
 
     public FileStatusBreakdownDto getFileStatusBreakdown(
-            Long userId, Role role, Long companyId, Long projectId
+            Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        List<WorkUnit> workUnits = filterWorkUnits(workUnitRepository.findAll(), userId, role, companyId, projectId, null, null);
+        List<WorkUnit> workUnits = filterWorkUnits(workUnitRepository.findAll(), userId, role, companyId, projectId, startDate, endDate);
         long total = workUnits.size();
         long completed = workUnits.stream().filter(w -> w.getStatus() == WorkUnitStatus.COMPLETED).count();
         long pending = total - completed;
@@ -239,14 +252,14 @@ public class DashboardService {
         return result;
     }
 
-    public List<EmployeeProductivityDto> getEmployeeProductivity(Long companyId) {
+    public List<EmployeeProductivityDto> getEmployeeProductivity(Long companyId, LocalDateTime startDate, LocalDateTime endDate) {
         List<User> users = userRepository.findAll();
         if (companyId != null) {
             users = users.stream().filter(u -> u.getCompany() != null && u.getCompany().getId().equals(companyId)).collect(Collectors.toList());
         }
 
-        List<CodingResult> codingResults = codingResultRepository.findAll();
-        List<AuditorResult> auditorResults = auditorResultRepository.findAll();
+        List<CodingResult> codingResults = filterCodingResults(codingResultRepository.findAll(), null, Role.ADMIN, companyId, null, startDate, endDate);
+        List<AuditorResult> auditorResults = filterAuditorResults(auditorResultRepository.findAll(), null, Role.ADMIN, companyId, startDate, endDate);
 
         Map<Long, Long> coderCounts = codingResults.stream()
                 .filter(cr -> cr.getCoder() != null && cr.getCoder().getId() != null)
@@ -276,21 +289,21 @@ public class DashboardService {
         List<IcdActivityDto> icdActivity = getIcdCodeActivity(userId, role, companyId, projectId, startDate, endDate);
         return icdActivity.stream().map(icd -> AiVsCoderVsAuditorDto.builder()
                 .month(icd.getMonth())
-                .aiPulled(icd.getDiagnosed()) // Diagnosed metrics match AI-pulled per requirements
+                .aiPulled(icd.getDiagnosed())
                 .coderSubmitted(icd.getSubmitted())
                 .auditorVerified(icd.getAuditorVerified())
                 .build()
         ).collect(Collectors.toList());
     }
 
-    public List<AuditorErrorRateDto> getAuditorErrorRates(Long companyId) {
+    public List<AuditorErrorRateDto> getAuditorErrorRates(Long companyId, LocalDateTime startDate, LocalDateTime endDate) {
         List<User> auditors = userRepository.findByRole(Role.AUDITOR);
         if (companyId != null) {
             auditors = auditors.stream().filter(u -> u.getCompany() != null && u.getCompany().getId().equals(companyId)).collect(Collectors.toList());
         }
 
-        List<AuditorResult> auditorResults = auditorResultRepository.findAll();
-        List<CodingResult> codingResults = codingResultRepository.findAll();
+        List<AuditorResult> auditorResults = filterAuditorResults(auditorResultRepository.findAll(), null, Role.ADMIN, companyId, startDate, endDate);
+        List<CodingResult> codingResults = filterCodingResults(codingResultRepository.findAll(), null, Role.ADMIN, companyId, null, startDate, endDate);
 
         Map<Long, CodingResult> codingResultMap = codingResults.stream()
                 .filter(cr -> cr.getWorkUnit() != null)

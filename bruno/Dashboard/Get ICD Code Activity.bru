@@ -4,14 +4,18 @@ meta {
   seq: 6
 }
 
-get {
+post {
   url: {{base_url}}/dashboard/icd-activity
-  body: none
+  body: json
   auth: inherit
 }
 
-params:query {
-  ~userId: 1
-  ~companyId: 1
-  ~projectId: 1
+body:json {
+  {
+    "userId": 1,
+    "companyId": 1,
+    "projectId": 1,
+    "startDate": "2026-01-01T00:00:00",
+    "endDate": "2026-12-31T23:59:59"
+  }
 }
