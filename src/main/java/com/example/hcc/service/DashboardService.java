@@ -68,14 +68,21 @@ public class DashboardService {
             }
         }
 
-        DashboardSummaryDto summary = getSummary(userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        CoderActivityFunnelDto funnel = getCoderActivityFunnel(userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        List<ProductionTrendDto> trend = getProductionTrend(userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        FileStatusBreakdownDto breakdown = getFileStatusBreakdown(userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        List<IcdActivityDto> icdActivity = getIcdCodeActivity(userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        List<EmployeeProductivityDto> productivity = getEmployeeProductivity(effectiveCompanyId, startDate, endDate);
-        List<AiVsCoderVsAuditorDto> aiVsCoderAuditor = getAiVsCoderVsAuditor(userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
-        List<AuditorErrorRateDto> errorRates = getAuditorErrorRates(effectiveCompanyId, startDate, endDate);
+        // Fetch each entity table ONCE for the entire dashboard request
+        List<FileRecord> allFiles = fileRepository.findAll();
+        List<WorkUnit> allWorkUnits = workUnitRepository.findAll();
+        List<CodingResult> allCodingResults = codingResultRepository.findAll();
+        List<AuditorResult> allAuditorResults = auditorResultRepository.findAll();
+        List<User> allUsers = userRepository.findAll();
+
+        DashboardSummaryDto summary = getSummary(allFiles, allWorkUnits, allCodingResults, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
+        CoderActivityFunnelDto funnel = getCoderActivityFunnel(allWorkUnits, allCodingResults, allUsers, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
+        List<ProductionTrendDto> trend = getProductionTrend(allFiles, allWorkUnits, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
+        FileStatusBreakdownDto breakdown = getFileStatusBreakdown(allWorkUnits, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
+        List<IcdActivityDto> icdActivity = getIcdCodeActivity(allCodingResults, allAuditorResults, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
+        List<EmployeeProductivityDto> productivity = getEmployeeProductivity(allUsers, allCodingResults, allAuditorResults, effectiveCompanyId, startDate, endDate);
+        List<AiVsCoderVsAuditorDto> aiVsCoderAuditor = getAiVsCoderVsAuditor(icdActivity);
+        List<AuditorErrorRateDto> errorRates = getAuditorErrorRates(allUsers, allAuditorResults, allCodingResults, effectiveCompanyId, startDate, endDate);
 
         return DashboardResponseDto.builder()
                 .summary(summary)
@@ -92,13 +99,17 @@ public class DashboardService {
     public DashboardSummaryDto getSummary(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        List<FileRecord> files = fileRepository.findAll();
-        List<WorkUnit> workUnits = workUnitRepository.findAll();
-        List<CodingResult> codingResults = codingResultRepository.findAll();
+        return getSummary(fileRepository.findAll(), workUnitRepository.findAll(), codingResultRepository.findAll(),
+                userId, role, companyId, projectId, startDate, endDate);
+    }
 
-        files = filterFiles(files, companyId, projectId, startDate, endDate);
-        workUnits = filterWorkUnits(workUnits, userId, role, companyId, projectId, startDate, endDate);
-        codingResults = filterCodingResults(codingResults, userId, role, companyId, projectId, startDate, endDate);
+    public DashboardSummaryDto getSummary(
+            List<FileRecord> allFiles, List<WorkUnit> allWorkUnits, List<CodingResult> allCodingResults,
+            Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
+    ) {
+        List<FileRecord> files = filterFiles(allFiles, companyId, projectId, startDate, endDate);
+        List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, userId, role, companyId, projectId, startDate, endDate);
+        List<CodingResult> codingResults = filterCodingResults(allCodingResults, userId, role, companyId, projectId, startDate, endDate);
 
         long totalUploaded = files.size();
         long totalAssigned = workUnits.stream().filter(w -> w.getStatus() == WorkUnitStatus.ASSIGNED || w.getStatus() == WorkUnitStatus.IN_PROGRESS || w.getStatus() == WorkUnitStatus.COMPLETED).count();
@@ -122,21 +133,31 @@ public class DashboardService {
     public CoderActivityFunnelDto getCoderActivityFunnel(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
+        return getCoderActivityFunnel(workUnitRepository.findAll(), codingResultRepository.findAll(), userRepository.findAll(),
+                userId, role, companyId, projectId, startDate, endDate);
+    }
+
+    public CoderActivityFunnelDto getCoderActivityFunnel(
+            List<WorkUnit> allWorkUnits, List<CodingResult> allCodingResults, List<User> allUsers,
+            Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
+    ) {
         long logins = 0;
         if (role == Role.CODER && userId != null) {
             logins = userLoginLogRepository.countLoginsForUserInPeriod(userId, startDate, endDate);
         } else {
-            List<Long> coderIds = userRepository.findIdsByRole(Role.CODER);
-            if (companyId != null) {
-                coderIds = userRepository.findIdsByRoleAndCompanyId(Role.CODER, companyId);
-            }
+            List<Long> coderIds = allUsers.stream()
+                    .filter(u -> u.getRole() == Role.CODER)
+                    .filter(u -> companyId == null || (u.getCompany() != null && companyId.equals(u.getCompany().getId())))
+                    .map(User::getId)
+                    .collect(Collectors.toList());
+
             if (!coderIds.isEmpty()) {
                 logins = userLoginLogRepository.countDistinctLoginsInPeriodForUsers(coderIds, startDate, endDate);
             }
         }
 
-        List<WorkUnit> workUnits = filterWorkUnits(workUnitRepository.findAll(), userId, role, companyId, projectId, startDate, endDate);
-        List<CodingResult> codingResults = filterCodingResults(codingResultRepository.findAll(), userId, role, companyId, projectId, startDate, endDate);
+        List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, userId, role, companyId, projectId, startDate, endDate);
+        List<CodingResult> codingResults = filterCodingResults(allCodingResults, userId, role, companyId, projectId, startDate, endDate);
 
         long assigned = workUnits.stream().filter(w -> w.getStatus() != WorkUnitStatus.UNASSIGNED).count();
         long submitted = codingResults.size();
@@ -153,8 +174,15 @@ public class DashboardService {
     public List<ProductionTrendDto> getProductionTrend(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        List<FileRecord> files = filterFiles(fileRepository.findAll(), companyId, projectId, startDate, endDate);
-        List<WorkUnit> workUnits = filterWorkUnits(workUnitRepository.findAll(), userId, role, companyId, projectId, startDate, endDate);
+        return getProductionTrend(fileRepository.findAll(), workUnitRepository.findAll(), userId, role, companyId, projectId, startDate, endDate);
+    }
+
+    public List<ProductionTrendDto> getProductionTrend(
+            List<FileRecord> allFiles, List<WorkUnit> allWorkUnits,
+            Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
+    ) {
+        List<FileRecord> files = filterFiles(allFiles, companyId, projectId, startDate, endDate);
+        List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, userId, role, companyId, projectId, startDate, endDate);
 
         List<YearMonth> monthsInRange = generateMonthsInRange(startDate, endDate);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
@@ -182,7 +210,14 @@ public class DashboardService {
     public FileStatusBreakdownDto getFileStatusBreakdown(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        List<WorkUnit> workUnits = filterWorkUnits(workUnitRepository.findAll(), userId, role, companyId, projectId, startDate, endDate);
+        return getFileStatusBreakdown(workUnitRepository.findAll(), userId, role, companyId, projectId, startDate, endDate);
+    }
+
+    public FileStatusBreakdownDto getFileStatusBreakdown(
+            List<WorkUnit> allWorkUnits,
+            Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
+    ) {
+        List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, userId, role, companyId, projectId, startDate, endDate);
         long total = workUnits.size();
         long completed = workUnits.stream().filter(w -> w.getStatus() == WorkUnitStatus.COMPLETED).count();
         long pending = total - completed;
@@ -197,8 +232,16 @@ public class DashboardService {
     public List<IcdActivityDto> getIcdCodeActivity(
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
-        List<CodingResult> codingResults = filterCodingResults(codingResultRepository.findAll(), userId, role, companyId, projectId, startDate, endDate);
-        List<AuditorResult> auditorResults = filterAuditorResults(auditorResultRepository.findAll(), userId, role, companyId, startDate, endDate);
+        return getIcdCodeActivity(codingResultRepository.findAll(), auditorResultRepository.findAll(),
+                userId, role, companyId, projectId, startDate, endDate);
+    }
+
+    public List<IcdActivityDto> getIcdCodeActivity(
+            List<CodingResult> allCodingResults, List<AuditorResult> allAuditorResults,
+            Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
+    ) {
+        List<CodingResult> codingResults = filterCodingResults(allCodingResults, userId, role, companyId, projectId, startDate, endDate);
+        List<AuditorResult> auditorResults = filterAuditorResults(allAuditorResults, userId, role, companyId, startDate, endDate);
 
         List<YearMonth> monthsInRange = generateMonthsInRange(startDate, endDate);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
@@ -239,13 +282,21 @@ public class DashboardService {
     }
 
     public List<EmployeeProductivityDto> getEmployeeProductivity(Long companyId, LocalDateTime startDate, LocalDateTime endDate) {
-        List<User> users = userRepository.findAll();
+        return getEmployeeProductivity(userRepository.findAll(), codingResultRepository.findAll(), auditorResultRepository.findAll(),
+                companyId, startDate, endDate);
+    }
+
+    public List<EmployeeProductivityDto> getEmployeeProductivity(
+            List<User> allUsers, List<CodingResult> allCodingResults, List<AuditorResult> allAuditorResults,
+            Long companyId, LocalDateTime startDate, LocalDateTime endDate
+    ) {
+        List<User> users = allUsers;
         if (companyId != null) {
             users = users.stream().filter(u -> u.getCompany() != null && u.getCompany().getId().equals(companyId)).collect(Collectors.toList());
         }
 
-        List<CodingResult> codingResults = filterCodingResults(codingResultRepository.findAll(), null, Role.ADMIN, companyId, null, startDate, endDate);
-        List<AuditorResult> auditorResults = filterAuditorResults(auditorResultRepository.findAll(), null, Role.ADMIN, companyId, startDate, endDate);
+        List<CodingResult> codingResults = filterCodingResults(allCodingResults, null, Role.ADMIN, companyId, null, startDate, endDate);
+        List<AuditorResult> auditorResults = filterAuditorResults(allAuditorResults, null, Role.ADMIN, companyId, startDate, endDate);
 
         Map<Long, Long> coderCounts = codingResults.stream()
                 .filter(cr -> cr.getCoder() != null && cr.getCoder().getId() != null)
@@ -273,6 +324,10 @@ public class DashboardService {
             Long userId, Role role, Long companyId, Long projectId, LocalDateTime startDate, LocalDateTime endDate
     ) {
         List<IcdActivityDto> icdActivity = getIcdCodeActivity(userId, role, companyId, projectId, startDate, endDate);
+        return getAiVsCoderVsAuditor(icdActivity);
+    }
+
+    public List<AiVsCoderVsAuditorDto> getAiVsCoderVsAuditor(List<IcdActivityDto> icdActivity) {
         return icdActivity.stream().map(icd -> AiVsCoderVsAuditorDto.builder()
                 .month(icd.getMonth())
                 .aiPulled(icd.getDiagnosed())
@@ -283,13 +338,21 @@ public class DashboardService {
     }
 
     public List<AuditorErrorRateDto> getAuditorErrorRates(Long companyId, LocalDateTime startDate, LocalDateTime endDate) {
-        List<User> auditors = userRepository.findByRole(Role.AUDITOR);
+        return getAuditorErrorRates(userRepository.findAll(), auditorResultRepository.findAll(), codingResultRepository.findAll(),
+                companyId, startDate, endDate);
+    }
+
+    public List<AuditorErrorRateDto> getAuditorErrorRates(
+            List<User> allUsers, List<AuditorResult> allAuditorResults, List<CodingResult> allCodingResults,
+            Long companyId, LocalDateTime startDate, LocalDateTime endDate
+    ) {
+        List<User> auditors = allUsers.stream().filter(u -> u.getRole() == Role.AUDITOR).collect(Collectors.toList());
         if (companyId != null) {
             auditors = auditors.stream().filter(u -> u.getCompany() != null && u.getCompany().getId().equals(companyId)).collect(Collectors.toList());
         }
 
-        List<AuditorResult> auditorResults = filterAuditorResults(auditorResultRepository.findAll(), null, Role.ADMIN, companyId, startDate, endDate);
-        List<CodingResult> codingResults = filterCodingResults(codingResultRepository.findAll(), null, Role.ADMIN, companyId, null, startDate, endDate);
+        List<AuditorResult> auditorResults = filterAuditorResults(allAuditorResults, null, Role.ADMIN, companyId, startDate, endDate);
+        List<CodingResult> codingResults = filterCodingResults(allCodingResults, null, Role.ADMIN, companyId, null, startDate, endDate);
 
         Map<Long, CodingResult> codingResultMap = codingResults.stream()
                 .filter(cr -> cr.getWorkUnit() != null)
