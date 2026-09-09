@@ -23,4 +23,12 @@ public interface WorkUnitRepository extends JpaRepository<WorkUnit, Long> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
+
+    @EntityGraph(attributePaths = {"project", "file"})
+    @Query("SELECT wu FROM WorkUnit wu WHERE wu.project.id IN :projectIds AND (:startDate IS NULL OR wu.createdAt >= :startDate) AND (:endDate IS NULL OR wu.createdAt <= :endDate)")
+    List<WorkUnit> findAllByProjectIdsAndDateRange(
+            @Param("projectIds") List<Long> projectIds,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 }

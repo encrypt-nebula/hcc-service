@@ -24,4 +24,12 @@ public interface AuditorResultRepository extends JpaRepository<AuditorResult, Lo
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
+
+    @EntityGraph(attributePaths = {"file", "auditor", "workUnit"})
+    @Query("SELECT ar FROM AuditorResult ar WHERE (ar.file.project.id IN :projectIds OR ar.workUnit.project.id IN :projectIds) AND (:startDate IS NULL OR ar.createdAt >= :startDate) AND (:endDate IS NULL OR ar.createdAt <= :endDate)")
+    List<AuditorResult> findAllByProjectIdsAndDateRange(
+            @Param("projectIds") List<Long> projectIds,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 }

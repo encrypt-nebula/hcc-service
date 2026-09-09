@@ -6,6 +6,7 @@ import com.example.hcc.enums.Role;
 import com.example.hcc.enums.WorkUnitStatus;
 import com.example.hcc.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -16,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
@@ -48,6 +50,7 @@ public class DashboardService {
             LocalDateTime startDate,
             LocalDateTime endDate
     ) {
+        long totalStart = System.currentTimeMillis();
         if (startDate == null) {
             startDate = LocalDateTime.now().minusDays(30);
         }
@@ -69,13 +72,76 @@ public class DashboardService {
             }
         }
 
-        // Fetch each entity table ONCE with eager JOIN FETCH filtered by date range in SQL
-        List<FileRecord> allFiles = fileRepository.findAllWithProjectAndAuditor(startDate, endDate);
-        List<WorkUnit> allWorkUnits = workUnitRepository.findAllWithProjectAndFile(startDate, endDate);
-        List<CodingResult> allCodingResults = codingResultRepository.findAllWithRelations(startDate, endDate);
-        List<AuditorResult> allAuditorResults = auditorResultRepository.findAllWithRelations(startDate, endDate);
-        List<User> allUsers = userRepository.findAllWithCompany();
-        List<Project> allProjects = projectRepository.findAllWithCreatedByAndCompany();
+        log.info("==> [PERF] Starting dashboard fetch: userId={}, companyId={}, projectId={}, start={}, end={}",
+                userId, effectiveCompanyId, projectId, startDate, endDate);
+
+        long t = System.currentTimeMillis();
+        List<Project> allProjects = (effectiveCompanyId != null)
+                ? projectRepository.findByCompanyIdWithCreatedByAndCompany(effectiveCompanyId)
+                : projectRepository.findAllWithCreatedByAndCompany();
+        log.info("==> [PERF] Projects fetched: count={}, time={}ms", allProjects.size(), (System.currentTimeMillis() - t));
+
+        List<Long> targetProjectIds = null;
+        if (projectId != null) {
+            targetProjectIds = List.of(projectId);
+        } else if (effectiveCompanyId != null) {
+            targetProjectIds = allProjects.stream()
+                    .map(Project::getId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        }
+
+        t = System.currentTimeMillis();
+        List<User> allUsers = (effectiveCompanyId != null)
+                ? userRepository.findByCompanyIdWithCompany(effectiveCompanyId)
+                : userRepository.findAllWithCompany();
+        log.info("==> [PERF] Users fetched: count={}, time={}ms", allUsers.size(), (System.currentTimeMillis() - t));
+
+        List<FileRecord> allFiles;
+        List<WorkUnit> allWorkUnits;
+        List<CodingResult> allCodingResults;
+        List<AuditorResult> allAuditorResults;
+
+        if (targetProjectIds != null) {
+            if (targetProjectIds.isEmpty()) {
+                allFiles = Collections.emptyList();
+                allWorkUnits = Collections.emptyList();
+                allCodingResults = Collections.emptyList();
+                allAuditorResults = Collections.emptyList();
+            } else {
+                t = System.currentTimeMillis();
+                allFiles = fileRepository.findAllByProjectIdsAndDateRange(targetProjectIds, startDate, endDate);
+                log.info("==> [PERF] Files fetched: count={}, time={}ms", allFiles.size(), (System.currentTimeMillis() - t));
+
+                t = System.currentTimeMillis();
+                allWorkUnits = workUnitRepository.findAllByProjectIdsAndDateRange(targetProjectIds, startDate, endDate);
+                log.info("==> [PERF] WorkUnits fetched: count={}, time={}ms", allWorkUnits.size(), (System.currentTimeMillis() - t));
+
+                t = System.currentTimeMillis();
+                allCodingResults = codingResultRepository.findAllByProjectIdsAndDateRange(targetProjectIds, startDate, endDate);
+                log.info("==> [PERF] CodingResults fetched: count={}, time={}ms", allCodingResults.size(), (System.currentTimeMillis() - t));
+
+                t = System.currentTimeMillis();
+                allAuditorResults = auditorResultRepository.findAllByProjectIdsAndDateRange(targetProjectIds, startDate, endDate);
+                log.info("==> [PERF] AuditorResults fetched: count={}, time={}ms", allAuditorResults.size(), (System.currentTimeMillis() - t));
+            }
+        } else {
+            t = System.currentTimeMillis();
+            allFiles = fileRepository.findAllWithProjectAndAuditor(startDate, endDate);
+            log.info("==> [PERF] Files fetched: count={}, time={}ms", allFiles.size(), (System.currentTimeMillis() - t));
+
+            t = System.currentTimeMillis();
+            allWorkUnits = workUnitRepository.findAllWithProjectAndFile(startDate, endDate);
+            log.info("==> [PERF] WorkUnits fetched: count={}, time={}ms", allWorkUnits.size(), (System.currentTimeMillis() - t));
+
+            t = System.currentTimeMillis();
+            allCodingResults = codingResultRepository.findAllWithRelations(startDate, endDate);
+            log.info("==> [PERF] CodingResults fetched: count={}, time={}ms", allCodingResults.size(), (System.currentTimeMillis() - t));
+
+            t = System.currentTimeMillis();
+            allAuditorResults = auditorResultRepository.findAllWithRelations(startDate, endDate);
+            log.info("==> [PERF] AuditorResults fetched: count={}, time={}ms", allAuditorResults.size(), (System.currentTimeMillis() - t));
+        }
 
         // Build fast in-memory lookup maps
         Map<Long, Long> projectCompanyMap = new HashMap<>();
@@ -98,7 +164,7 @@ public class DashboardService {
             }
         }
 
-
+        t = System.currentTimeMillis();
         DashboardSummaryDto summary = getSummary(allFiles, allWorkUnits, allCodingResults, projectCompanyMap, fileProjectMap, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
         CoderActivityFunnelDto funnel = getCoderActivityFunnel(allWorkUnits, allCodingResults, allUsers, projectCompanyMap, fileProjectMap, fileAuditorMap, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
         List<ProductionTrendDto> trend = getProductionTrend(allFiles, allWorkUnits, projectCompanyMap, fileAuditorMap, userId, effectiveRole, effectiveCompanyId, projectId, startDate, endDate);
@@ -107,6 +173,7 @@ public class DashboardService {
         List<EmployeeProductivityDto> productivity = getEmployeeProductivity(allUsers, allCodingResults, allAuditorResults, projectCompanyMap, fileProjectMap, effectiveCompanyId, startDate, endDate);
         List<AiVsCoderVsAuditorDto> aiVsCoderAuditor = getAiVsCoderVsAuditor(icdActivity);
         List<AuditorErrorRateDto> errorRates = getAuditorErrorRates(allUsers, allAuditorResults, allCodingResults, projectCompanyMap, fileProjectMap, effectiveCompanyId, startDate, endDate);
+        log.info("==> [PERF] In-memory calculations took {}ms. TOTAL TIME: {}ms", (System.currentTimeMillis() - t), (System.currentTimeMillis() - totalStart));
 
         return DashboardResponseDto.builder()
                 .summary(summary)
@@ -327,11 +394,41 @@ public class DashboardService {
     }
 
     public List<EmployeeProductivityDto> getEmployeeProductivity(Long companyId, LocalDateTime startDate, LocalDateTime endDate) {
-        List<FileRecord> files = fileRepository.findAllWithProjectAndAuditor(startDate, endDate);
-        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAllWithCreatedByAndCompany());
+        List<Project> allProjects = (companyId != null)
+                ? projectRepository.findByCompanyIdWithCreatedByAndCompany(companyId)
+                : projectRepository.findAllWithCreatedByAndCompany();
+
+        List<Long> targetProjectIds = (companyId != null)
+                ? allProjects.stream().map(Project::getId).filter(Objects::nonNull).collect(Collectors.toList())
+                : null;
+
+        List<User> users = (companyId != null)
+                ? userRepository.findByCompanyIdWithCompany(companyId)
+                : userRepository.findAllWithCompany();
+
+        List<FileRecord> files;
+        List<CodingResult> codingResults;
+        List<AuditorResult> auditorResults;
+
+        if (targetProjectIds != null) {
+            if (targetProjectIds.isEmpty()) {
+                files = Collections.emptyList();
+                codingResults = Collections.emptyList();
+                auditorResults = Collections.emptyList();
+            } else {
+                files = fileRepository.findAllByProjectIdsAndDateRange(targetProjectIds, startDate, endDate);
+                codingResults = codingResultRepository.findAllByProjectIdsAndDateRange(targetProjectIds, startDate, endDate);
+                auditorResults = auditorResultRepository.findAllByProjectIdsAndDateRange(targetProjectIds, startDate, endDate);
+            }
+        } else {
+            files = fileRepository.findAllWithProjectAndAuditor(startDate, endDate);
+            codingResults = codingResultRepository.findAllWithRelations(startDate, endDate);
+            auditorResults = auditorResultRepository.findAllWithRelations(startDate, endDate);
+        }
+
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(allProjects);
         Map<Long, Long> fileProjectMap = buildFileProjectMap(files);
-        return getEmployeeProductivity(userRepository.findAllWithCompany(), codingResultRepository.findAllWithRelations(startDate, endDate), auditorResultRepository.findAllWithRelations(startDate, endDate),
-                projectCompanyMap, fileProjectMap, companyId, startDate, endDate);
+        return getEmployeeProductivity(users, codingResults, auditorResults, projectCompanyMap, fileProjectMap, companyId, startDate, endDate);
     }
 
     public List<EmployeeProductivityDto> getEmployeeProductivity(
@@ -387,11 +484,41 @@ public class DashboardService {
     }
 
     public List<AuditorErrorRateDto> getAuditorErrorRates(Long companyId, LocalDateTime startDate, LocalDateTime endDate) {
-        List<FileRecord> files = fileRepository.findAllWithProjectAndAuditor(startDate, endDate);
-        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(projectRepository.findAllWithCreatedByAndCompany());
+        List<Project> allProjects = (companyId != null)
+                ? projectRepository.findByCompanyIdWithCreatedByAndCompany(companyId)
+                : projectRepository.findAllWithCreatedByAndCompany();
+
+        List<Long> targetProjectIds = (companyId != null)
+                ? allProjects.stream().map(Project::getId).filter(Objects::nonNull).collect(Collectors.toList())
+                : null;
+
+        List<User> users = (companyId != null)
+                ? userRepository.findByCompanyIdWithCompany(companyId)
+                : userRepository.findAllWithCompany();
+
+        List<FileRecord> files;
+        List<CodingResult> codingResults;
+        List<AuditorResult> auditorResults;
+
+        if (targetProjectIds != null) {
+            if (targetProjectIds.isEmpty()) {
+                files = Collections.emptyList();
+                codingResults = Collections.emptyList();
+                auditorResults = Collections.emptyList();
+            } else {
+                files = fileRepository.findAllByProjectIdsAndDateRange(targetProjectIds, startDate, endDate);
+                codingResults = codingResultRepository.findAllByProjectIdsAndDateRange(targetProjectIds, startDate, endDate);
+                auditorResults = auditorResultRepository.findAllByProjectIdsAndDateRange(targetProjectIds, startDate, endDate);
+            }
+        } else {
+            files = fileRepository.findAllWithProjectAndAuditor(startDate, endDate);
+            codingResults = codingResultRepository.findAllWithRelations(startDate, endDate);
+            auditorResults = auditorResultRepository.findAllWithRelations(startDate, endDate);
+        }
+
+        Map<Long, Long> projectCompanyMap = buildProjectCompanyMap(allProjects);
         Map<Long, Long> fileProjectMap = buildFileProjectMap(files);
-        return getAuditorErrorRates(userRepository.findAllWithCompany(), auditorResultRepository.findAllWithRelations(startDate, endDate), codingResultRepository.findAllWithRelations(startDate, endDate),
-                projectCompanyMap, fileProjectMap, companyId, startDate, endDate);
+        return getAuditorErrorRates(users, auditorResults, codingResults, projectCompanyMap, fileProjectMap, companyId, startDate, endDate);
     }
 
     public List<AuditorErrorRateDto> getAuditorErrorRates(

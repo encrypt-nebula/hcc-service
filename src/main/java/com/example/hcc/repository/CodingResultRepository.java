@@ -43,4 +43,12 @@ public interface CodingResultRepository extends JpaRepository<CodingResult, Long
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
+
+    @EntityGraph(attributePaths = {"file", "coder", "workUnit"})
+    @Query("SELECT cr FROM CodingResult cr WHERE (cr.file.project.id IN :projectIds OR cr.workUnit.project.id IN :projectIds) AND (:startDate IS NULL OR cr.createdAt >= :startDate) AND (:endDate IS NULL OR cr.createdAt <= :endDate)")
+    List<CodingResult> findAllByProjectIdsAndDateRange(
+            @Param("projectIds") List<Long> projectIds,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 }

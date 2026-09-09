@@ -20,4 +20,12 @@ public interface FileRepository extends JpaRepository<FileRecord, Long> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
+
+    @EntityGraph(attributePaths = {"project", "auditor"})
+    @Query("SELECT f FROM FileRecord f WHERE f.project.id IN :projectIds AND (:startDate IS NULL OR f.createdAt >= :startDate) AND (:endDate IS NULL OR f.createdAt <= :endDate)")
+    List<FileRecord> findAllByProjectIdsAndDateRange(
+            @Param("projectIds") List<Long> projectIds,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 }

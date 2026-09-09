@@ -32,4 +32,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @EntityGraph(attributePaths = {"createdBy", "createdBy.company"})
     @Query("SELECT p FROM Project p")
     List<Project> findAllWithCreatedByAndCompany();
+
+    @EntityGraph(attributePaths = {"createdBy", "createdBy.company"})
+    @Query("SELECT p FROM Project p WHERE p.createdBy.company.id = :companyId")
+    List<Project> findByCompanyIdWithCreatedByAndCompany(@Param("companyId") Long companyId);
 }
