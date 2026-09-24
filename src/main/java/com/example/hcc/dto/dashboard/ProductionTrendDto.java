@@ -12,5 +12,6 @@ import lombok.NoArgsConstructor;
 public class ProductionTrendDto {
     private String month;
     private long uploaded;
+    private long assigned;
     private long completed;
 }

@@ -206,10 +206,18 @@ public class DashboardService {
         List<WorkUnit> workUnits = filterWorkUnits(allWorkUnits, projectCompanyMap, Collections.emptyMap(), userId, role, companyId, projectId, startDate, endDate);
         List<CodingResult> codingResults = filterCodingResults(allCodingResults, projectCompanyMap, fileProjectMap, userId, role, companyId, projectId, startDate, endDate);
 
-        long totalUploaded = files.size();
+        long totalUploaded;
+        if (role == Role.CODER && userId != null) {
+            totalUploaded = workUnits.size();
+        } else {
+            totalUploaded = files.size();
+        }
+
         long totalAssigned = workUnits.stream().filter(w -> w.getStatus() == WorkUnitStatus.ASSIGNED || w.getStatus() == WorkUnitStatus.IN_PROGRESS || w.getStatus() == WorkUnitStatus.COMPLETED).count();
         long totalCompleted = workUnits.stream().filter(w -> w.getStatus() == WorkUnitStatus.COMPLETED).count();
-        long totalPending = workUnits.stream().filter(w -> w.getStatus() == WorkUnitStatus.UNASSIGNED || w.getStatus() == WorkUnitStatus.ASSIGNED || w.getStatus() == WorkUnitStatus.IN_PROGRESS).count();
+        long totalPending = (role == Role.CODER && userId != null)
+                ? workUnits.stream().filter(w -> w.getStatus() == WorkUnitStatus.ASSIGNED || w.getStatus() == WorkUnitStatus.IN_PROGRESS).count()
+                : workUnits.stream().filter(w -> w.getStatus() == WorkUnitStatus.UNASSIGNED || w.getStatus() == WorkUnitStatus.ASSIGNED || w.getStatus() == WorkUnitStatus.IN_PROGRESS).count();
 
         LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
         long submittedToday = codingResults.stream()
@@ -291,9 +299,20 @@ public class DashboardService {
         List<YearMonth> monthsInRange = generateMonthsInRange(startDate, endDate);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
 
-        Map<YearMonth, Long> uploadedByMonth = files.stream()
-                .filter(f -> f.getCreatedAt() != null)
-                .collect(Collectors.groupingBy(f -> YearMonth.from(f.getCreatedAt()), Collectors.counting()));
+        Map<YearMonth, Long> uploadedByMonth;
+        if (role == Role.CODER && userId != null) {
+            uploadedByMonth = workUnits.stream()
+                    .filter(w -> w.getCreatedAt() != null)
+                    .collect(Collectors.groupingBy(w -> YearMonth.from(w.getCreatedAt()), Collectors.counting()));
+        } else {
+            uploadedByMonth = files.stream()
+                    .filter(f -> f.getCreatedAt() != null)
+                    .collect(Collectors.groupingBy(f -> YearMonth.from(f.getCreatedAt()), Collectors.counting()));
+        }
+
+        Map<YearMonth, Long> assignedByMonth = workUnits.stream()
+                .filter(w -> w.getStatus() != WorkUnitStatus.UNASSIGNED && w.getCreatedAt() != null)
+                .collect(Collectors.groupingBy(w -> YearMonth.from(w.getCreatedAt()), Collectors.counting()));
 
         Map<YearMonth, Long> completedByMonth = workUnits.stream()
                 .filter(w -> w.getStatus() == WorkUnitStatus.COMPLETED && w.getCreatedAt() != null)
@@ -304,6 +323,7 @@ public class DashboardService {
             result.add(ProductionTrendDto.builder()
                     .month(ym.format(formatter))
                     .uploaded(uploadedByMonth.getOrDefault(ym, 0L))
+                    .assigned(assignedByMonth.getOrDefault(ym, 0L))
                     .completed(completedByMonth.getOrDefault(ym, 0L))
                     .build());
         }
