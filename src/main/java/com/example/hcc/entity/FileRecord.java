@@ -1,5 +1,6 @@
 package com.example.hcc.entity;
 
+import com.example.hcc.enums.Status;
 import com.example.hcc.enums.UploadStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -40,6 +41,11 @@ public class FileRecord {
     @Enumerated(EnumType.STRING)
     private UploadStatus uploadStatus;
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    @Column(name = "status")
+    private Status status = Status.ACTIVE;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     @JoinColumn(name = "auditor_id")
@@ -52,6 +58,9 @@ public class FileRecord {
     public void prePersist() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (status == null) {
+            status = Status.ACTIVE;
         }
     }
 }

@@ -87,5 +87,9 @@ public class CognitoService {
         );
 
     }
-    
+    public void adminDisableUser(String username) {
+        if (username != null && !username.isBlank()) {
+            cognitoUtils.adminDisableUser(userPoolId, username);
+        }
+    }
 }
