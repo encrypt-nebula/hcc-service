@@ -1,0 +1,17 @@
+meta {
+  name: Delete Files Bulk
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{base_url}}/files
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "fileIds": [1, 2]
+  }
+}

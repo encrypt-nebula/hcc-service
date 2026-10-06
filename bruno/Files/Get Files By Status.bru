@@ -1,0 +1,15 @@
+meta {
+  name: Get Files By Status
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/files?status=ACTIVE
+  body: none
+  auth: inherit
+}
+
+params:query {
+  status: ACTIVE
+}
