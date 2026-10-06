@@ -15,6 +15,7 @@ import java.util.List;
 public interface AuditorResultRepository extends JpaRepository<AuditorResult, Long> {
     Optional<AuditorResult> findByWorkUnitId(Long workUnitId);
     Optional<AuditorResult> findByFileId(Long fileId);
+    void deleteByFileId(Long fileId);
     List<AuditorResult> findByAuditor_Id(Long auditorId);
     List<AuditorResult> findByFileIdIn(List<Long> fileIds);
 

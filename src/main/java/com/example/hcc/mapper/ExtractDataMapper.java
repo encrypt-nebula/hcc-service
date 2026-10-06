@@ -2,6 +2,7 @@ package com.example.hcc.mapper;
 
 import com.example.hcc.dto.ExtractDataRequest;
 import com.example.hcc.entity.*;
+import com.example.hcc.enums.Status;
 import com.example.hcc.enums.UploadStatus;
 import com.example.hcc.enums.WorkUnitStatus;
 import com.example.hcc.enums.WorkUnitType;
@@ -23,6 +24,7 @@ public class ExtractDataMapper {
                 .totalPages(req.getTotalPages())
                 .signature(req.getSignature())
                 .uploadStatus(UploadStatus.PROCESSED)
+                .status(Status.ACTIVE)
                 .build();
     }
 

@@ -33,6 +33,7 @@ public interface CodingResultRepository extends JpaRepository<CodingResult, Long
     List<CodingResult> findByAssignedToCoder(@Param("coderId") Long coderId);
 
     void deleteByWorkUnit_Id(Long workUnitId);
+    void deleteByFile_Id(Long fileId);
 
     java.util.Optional<CodingResult> findByWorkUnitId(Long workUnitId);
     List<CodingResult> findByFileIdIn(List<Long> fileIds);

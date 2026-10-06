@@ -55,6 +55,9 @@ public class DataExtractionService {
         fileRecord.setSignature(dto.getSignature());
         fileRecord.setIsValid(dto.getIsValid());
         fileRecord.setUploadStatus(dto.getIsValid() != null && !dto.getIsValid() ? UploadStatus.INVALID : UploadStatus.PROCESSED);
+        if (fileRecord.getStatus() == null) {
+            fileRecord.setStatus(Status.ACTIVE);
+        }
         fileRecord = fileRepository.save(fileRecord);
 
         // 4. Save Patient (Primary/Top-level)

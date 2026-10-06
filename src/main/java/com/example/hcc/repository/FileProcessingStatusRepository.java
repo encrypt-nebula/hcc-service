@@ -11,6 +11,7 @@ import java.util.Optional;
 public interface FileProcessingStatusRepository extends JpaRepository<FileProcessingStatus, Long> {
 
     Optional<FileProcessingStatus> findByS3Path(String s3Path);
+    void deleteByS3Path(String s3Path);
 
     List<FileProcessingStatus> findByProjectId(Integer projectId);
 }
