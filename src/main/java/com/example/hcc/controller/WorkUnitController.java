@@ -2,7 +2,9 @@ package com.example.hcc.controller;
 
 import com.example.hcc.dto.AssignWorkUnitsRequest;
 import com.example.hcc.dto.FileWorkUnitsDTO;
+import com.example.hcc.dto.MeatSummaryDTO;
 import com.example.hcc.dto.WorkUnitResponse;
+import com.example.hcc.entity.MeatKeyword;
 import com.example.hcc.entity.WorkUnit;
 import com.example.hcc.service.WorkUnitService;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +59,16 @@ public class WorkUnitController {
     @GetMapping("/project/{projectId}")
     public List<FileWorkUnitsDTO> getByProject(@PathVariable Long projectId) {
         return service.getMergedWorkUnitsByProject(projectId);
+    }
+
+    @GetMapping("/{id}/meat-keywords")
+    public List<MeatKeyword> getMeatKeywords(@PathVariable Long id) {
+        return service.getMeatKeywords(id);
+    }
+
+    @GetMapping("/{id}/meat-summary")
+    public MeatSummaryDTO getMeatSummary(@PathVariable Long id) {
+        return service.getMeatSummary(id);
     }
 }
 
