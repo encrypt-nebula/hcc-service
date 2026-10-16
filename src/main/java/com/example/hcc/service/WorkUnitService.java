@@ -1,10 +1,12 @@
 package com.example.hcc.service;
 
 import com.example.hcc.dto.*;
+import com.example.hcc.entity.MeatKeyword;
 import com.example.hcc.entity.User;
 import com.example.hcc.entity.WorkUnit;
 import com.example.hcc.enums.WorkUnitStatus;
 import com.example.hcc.exceptions.ResourceNotFoundException;
+import com.example.hcc.repository.MeatKeywordRepository;
 import com.example.hcc.repository.UserRepository;
 import com.example.hcc.repository.WorkUnitRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -22,6 +24,7 @@ public class WorkUnitService {
 
     private final WorkUnitRepository repo;
     private final UserRepository userRepository;
+    private final MeatKeywordRepository meatKeywordRepository;
     private final ObjectMapper objectMapper;
 
 
@@ -204,6 +207,23 @@ public class WorkUnitService {
 
         List<WorkUnit> workUnits = repo.findByProject_Id(projectId);
 
+        List<Long> workUnitIds = workUnits.stream().map(WorkUnit::getId).filter(Objects::nonNull).toList();
+        Map<Long, Map<String, List<String>>> meatKeywordsByWorkUnit = new HashMap<>();
+        if (!workUnitIds.isEmpty()) {
+            List<MeatKeyword> allKeywords = meatKeywordRepository.findByWorkUnit_IdIn(workUnitIds);
+            meatKeywordsByWorkUnit = allKeywords.stream()
+                    .filter(k -> k.getWorkUnit() != null && k.getWorkUnit().getId() != null)
+                    .collect(Collectors.groupingBy(
+                            k -> k.getWorkUnit().getId(),
+                            Collectors.groupingBy(
+                                    MeatKeyword::getCategory,
+                                    Collectors.mapping(MeatKeyword::getKeyword, Collectors.toList())
+                            )
+                    ));
+        }
+
+        final Map<Long, Map<String, List<String>>> finalMeatMap = meatKeywordsByWorkUnit;
+
         // Group by fileId
         Map<Long, List<WorkUnit>> groupedByFile = workUnits.stream()
                 .collect(Collectors.groupingBy(w -> w.getFile().getId()));
@@ -215,12 +235,30 @@ public class WorkUnitService {
 
                     WorkUnit base = units.get(0);
 
+                    // Aggregate file-level MEAT keywords
+                    Map<String, List<String>> fileMeat = new HashMap<>();
+
                     List<WorkUnitMergeDTO> simpleUnits = units.stream()
-                            .map(w -> WorkUnitMergeDTO.builder()
-                                    .id(w.getId())
-                                    .dos(w.getDateOfService())
-                                    .build())
+                            .map(w -> {
+                                Map<String, List<String>> unitMeat = finalMeatMap.getOrDefault(w.getId(), Collections.emptyMap());
+                                unitMeat.forEach((cat, kws) -> {
+                                    fileMeat.computeIfAbsent(cat, k -> new ArrayList<>()).addAll(kws);
+                                });
+
+                                return WorkUnitMergeDTO.builder()
+                                        .id(w.getId())
+                                        .dos(w.getDateOfService())
+                                        .monitor(w.getMonitor())
+                                        .evaluate(w.getEvaluate())
+                                        .assessOrAddress(w.getAssessOrAddress())
+                                        .treat(w.getTreat())
+                                        .meatKeywords(unitMeat)
+                                        .build();
+                            })
                             .toList();
+
+                    // Deduplicate file-level keywords
+                    fileMeat.replaceAll((cat, list) -> list.stream().distinct().toList());
 
                     return FileWorkUnitsDTO.builder()
                             .fileRecord(base.getFile())
@@ -240,10 +278,34 @@ public class WorkUnitService {
                             .createdAt(base.getCreatedAt())
                             .project(base.getProject())
                             .patient(base.getPatient())
+                            .meatKeywords(fileMeat)
                             .workUnits(simpleUnits)
                             .build();
                 })
                 .filter(Objects::nonNull)
                 .toList();
+    }
+
+    public List<MeatKeyword> getMeatKeywords(Long workUnitId) {
+        return meatKeywordRepository.findByWorkUnitId(workUnitId);
+    }
+
+    public MeatSummaryDTO getMeatSummary(Long workUnitId) {
+        WorkUnit wu = get(workUnitId);
+        List<MeatKeyword> keywords = meatKeywordRepository.findByWorkUnitId(workUnitId);
+        Map<String, List<String>> categories = keywords.stream()
+                .collect(Collectors.groupingBy(
+                        MeatKeyword::getCategory,
+                        Collectors.mapping(MeatKeyword::getKeyword, Collectors.toList())
+                ));
+
+        return MeatSummaryDTO.builder()
+                .workUnitId(workUnitId)
+                .monitor(wu.getMonitor())
+                .evaluate(wu.getEvaluate())
+                .assessOrAddress(wu.getAssessOrAddress())
+                .treat(wu.getTreat())
+                .categories(categories)
+                .build();
     }
 }

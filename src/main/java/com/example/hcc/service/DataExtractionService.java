@@ -25,6 +25,7 @@ public class DataExtractionService {
     private final PatientRepository patientRepository;
     private final WorkUnitRepository workUnitRepository;
     private final CodingResultRepository codingResultRepository;
+    private final MeatKeywordRepository meatKeywordRepository;
 
     @Transactional
     public void processExtraction(DataExtractionDto dto) {
@@ -38,6 +39,7 @@ public class DataExtractionService {
         fileRepository.findByS3Path(dto.getS3Path()).ifPresent(f -> {
             List<WorkUnit> existingWus = workUnitRepository.findByFile_Id(f.getId());
             for (WorkUnit wu : existingWus) {
+                meatKeywordRepository.deleteByWorkUnitId(wu.getId());
                 codingResultRepository.deleteByWorkUnit_Id(wu.getId());
             }
             workUnitRepository.deleteByFile_Id(f.getId());
@@ -98,11 +100,16 @@ public class DataExtractionService {
                         workUnit.setType(WorkUnitType.PATIENT);
                         workUnit.setStatus(WorkUnitStatus.UNASSIGNED);
                         workUnit.setDateOfService(detailDos);
+                        applyMeatDetails(workUnit, detail);
                         workUnit = workUnitRepository.save(workUnit);
 
                         workUnitsByDos.put(detailDos, workUnit);
                         workUnitCreated = true;
+                    } else {
+                        applyMeatDetails(workUnit, detail);
+                        workUnit = workUnitRepository.save(workUnit);
                     }
+                    saveMeatKeywords(workUnit, detail);
                     saveCodingResult(workUnit, fileRecord, detailDos, detail);
                 }
             } else {
@@ -118,8 +125,10 @@ public class DataExtractionService {
                     workUnit.setType(WorkUnitType.PAGE_RANGE);
                     workUnit.setStatus(WorkUnitStatus.UNASSIGNED);
                     workUnit.setDateOfService(detailDos);
+                    applyMeatDetails(workUnit, detail);
                     workUnit = workUnitRepository.save(workUnit);
 
+                    saveMeatKeywords(workUnit, detail);
                     saveCodingResult(workUnit, fileRecord, detailDos, detail);
                     workUnitCreated = true;
                 }
@@ -136,7 +145,70 @@ public class DataExtractionService {
             fallbackWu.setType(project.getProjectType() == ProjectType.PROSPECTIVE ? WorkUnitType.PATIENT : WorkUnitType.PAGE_RANGE);
             fallbackWu.setStatus(WorkUnitStatus.UNASSIGNED);
             fallbackWu.setDateOfService(parseSafeDate(dto.getDos()));
-            workUnitRepository.save(fallbackWu);
+            fallbackWu.setMonitor(Boolean.TRUE.equals(dto.getMonitor()));
+            fallbackWu.setEvaluate(Boolean.TRUE.equals(dto.getEvaluate()));
+            fallbackWu.setAssessOrAddress(Boolean.TRUE.equals(dto.getAssessOrAddress()));
+            fallbackWu.setTreat(Boolean.TRUE.equals(dto.getTreat()));
+            fallbackWu = workUnitRepository.save(fallbackWu);
+
+            saveCategoryKeywords(fallbackWu, "MONITORING", dto.getMonitoringKeywords());
+            saveCategoryKeywords(fallbackWu, "EVALUATION", dto.getEvaluationKeywords());
+            saveCategoryKeywords(fallbackWu, "ASSESSMENT", dto.getAssessmentKeywords());
+            saveCategoryKeywords(fallbackWu, "TREATMENT", dto.getTreatmentKeywords());
+        }
+    }
+
+    private void applyMeatDetails(WorkUnit workUnit, DataExtractionDto.EncounterDetailDto detail) {
+        if (detail == null || workUnit == null) return;
+        boolean hasMonitor = Boolean.TRUE.equals(workUnit.getMonitor())
+                || Boolean.TRUE.equals(detail.getMonitor())
+                || (detail.getMonitoringKeywords() != null && !detail.getMonitoringKeywords().isEmpty());
+
+        boolean hasEvaluate = Boolean.TRUE.equals(workUnit.getEvaluate())
+                || Boolean.TRUE.equals(detail.getEvaluate())
+                || (detail.getEvaluationKeywords() != null && !detail.getEvaluationKeywords().isEmpty());
+
+        boolean hasAssess = Boolean.TRUE.equals(workUnit.getAssessOrAddress())
+                || Boolean.TRUE.equals(detail.getAssessOrAddress())
+                || (detail.getAssessmentKeywords() != null && !detail.getAssessmentKeywords().isEmpty());
+
+        boolean hasTreat = Boolean.TRUE.equals(workUnit.getTreat())
+                || Boolean.TRUE.equals(detail.getTreat())
+                || (detail.getTreatmentKeywords() != null && !detail.getTreatmentKeywords().isEmpty());
+
+        workUnit.setMonitor(hasMonitor);
+        workUnit.setEvaluate(hasEvaluate);
+        workUnit.setAssessOrAddress(hasAssess);
+        workUnit.setTreat(hasTreat);
+    }
+
+    private void saveMeatKeywords(WorkUnit workUnit, DataExtractionDto.EncounterDetailDto detail) {
+        if (detail == null || workUnit == null || workUnit.getId() == null) return;
+
+        saveCategoryKeywords(workUnit, "MONITORING", detail.getMonitoringKeywords());
+        saveCategoryKeywords(workUnit, "EVALUATION", detail.getEvaluationKeywords());
+        saveCategoryKeywords(workUnit, "ASSESSMENT", detail.getAssessmentKeywords());
+        saveCategoryKeywords(workUnit, "TREATMENT", detail.getTreatmentKeywords());
+
+        if (detail.getMeatKeywords() != null) {
+            detail.getMeatKeywords().forEach((cat, kws) -> {
+                if (kws != null && !kws.isEmpty() && cat != null) {
+                    saveCategoryKeywords(workUnit, cat.toUpperCase().trim(), kws);
+                }
+            });
+        }
+    }
+
+    private void saveCategoryKeywords(WorkUnit workUnit, String category, List<String> keywords) {
+        if (keywords == null || keywords.isEmpty()) return;
+        for (String kw : keywords) {
+            if (kw == null || kw.trim().isEmpty()) continue;
+            MeatKeyword mk = MeatKeyword.builder()
+                    .workUnit(workUnit)
+                    .category(category)
+                    .keyword(kw.trim())
+                    .build();
+            meatKeywordRepository.save(mk);
         }
     }
 
