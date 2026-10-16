@@ -1,0 +1,23 @@
+meta {
+  name: Assign Work Units To Coder
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/work-units/assign?coderId=1
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "pageRangeRequest": [
+      {
+        "fileId": 1,
+        "startPage": 1,
+        "endPage": 10
+      }
+    ]
+  }
+}
