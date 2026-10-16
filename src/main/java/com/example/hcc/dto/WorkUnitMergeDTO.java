@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
@@ -13,5 +15,10 @@ import java.time.LocalDate;
 @Builder(toBuilder = true)
 public class WorkUnitMergeDTO {
     private Long id;
-    private LocalDate dos; // or Integer if your `dos` is integer
+    private LocalDate dos;
+    private Boolean monitor;
+    private Boolean evaluate;
+    private Boolean assessOrAddress;
+    private Boolean treat;
+    private Map<String, List<String>> meatKeywords;
 }

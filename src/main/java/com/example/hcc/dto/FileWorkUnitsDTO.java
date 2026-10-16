@@ -35,5 +35,6 @@ public class FileWorkUnitsDTO {
     private LocalDateTime createdAt;
     private Project project;
     private Patient patient;
+    private java.util.Map<String, java.util.List<String>> meatKeywords;
     private List<WorkUnitMergeDTO> workUnits;
 }
