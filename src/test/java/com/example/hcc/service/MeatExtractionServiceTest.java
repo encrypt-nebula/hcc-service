@@ -1,6 +1,8 @@
 package com.example.hcc.service;
 
+import com.example.hcc.dto.CodingResultMergeDTO;
 import com.example.hcc.dto.DataExtractionDto;
+import com.example.hcc.dto.FileCodingResultsDTO;
 import com.example.hcc.dto.FileWorkUnitsDTO;
 import com.example.hcc.dto.MeatSummaryDTO;
 import com.example.hcc.entity.*;
@@ -37,6 +39,8 @@ public class MeatExtractionServiceTest {
     private WorkUnitRepository workUnitRepository;
     @Mock
     private CodingResultRepository codingResultRepository;
+    @Mock
+    private AuditorResultRepository auditorResultRepository;
     @Mock
     private MeatKeywordRepository meatKeywordRepository;
     @Mock
@@ -182,5 +186,57 @@ public class MeatExtractionServiceTest {
         // Nested workUnit
         assertEquals(1, fileDto.getWorkUnits().size());
         assertEquals(List.of("recheck"), fileDto.getWorkUnits().get(0).getMeatKeywords().get("MONITORING"));
+    }
+
+    @Test
+    void testGetMergedCodingResultsByCoder_EmbedsMeatKeywords() {
+        FileRecord file = FileRecord.builder().id(5L).fileName("record.pdf").build();
+        WorkUnit wu = WorkUnit.builder()
+                .id(200L)
+                .file(file)
+                .dateOfService(LocalDate.of(2024, 6, 1))
+                .monitor(true)
+                .evaluate(false)
+                .assessOrAddress(true)
+                .treat(true)
+                .build();
+
+        CodingResult cr = CodingResult.builder()
+                .id(10L)
+                .file(file)
+                .workUnit(wu)
+                .dos(LocalDate.of(2024, 6, 1))
+                .build();
+
+        when(codingResultRepository.findByAssignedToCoder(123L)).thenReturn(List.of(cr));
+        when(auditorResultRepository.findByFileIdIn(List.of(5L))).thenReturn(List.of());
+
+        List<MeatKeyword> keywords = List.of(
+                MeatKeyword.builder().category("MONITORING").keyword("bp monitored").workUnit(wu).build(),
+                MeatKeyword.builder().category("TREATMENT").keyword("metformin continued").workUnit(wu).build()
+        );
+        when(meatKeywordRepository.findByWorkUnit_IdIn(List.of(200L))).thenReturn(keywords);
+
+        CodingResultService codingResultService = new CodingResultService(codingResultRepository, auditorResultRepository, meatKeywordRepository);
+        List<FileCodingResultsDTO> results = codingResultService.getMergedCodingResultsByCoder(123L);
+
+        assertNotNull(results);
+        assertEquals(1, results.size());
+        FileCodingResultsDTO fileDto = results.get(0);
+        assertTrue(fileDto.getMonitor());
+        assertFalse(fileDto.getEvaluate());
+        assertTrue(fileDto.getTreat());
+        assertNotNull(fileDto.getMeatKeywords());
+        assertEquals(List.of("bp monitored"), fileDto.getMeatKeywords().get("MONITORING"));
+        assertEquals(List.of("metformin continued"), fileDto.getMeatKeywords().get("TREATMENT"));
+
+        // Check codingResults encounter level
+        assertNotNull(fileDto.getCodingResults());
+        assertEquals(1, fileDto.getCodingResults().size());
+        CodingResultMergeDTO encounter = fileDto.getCodingResults().get(0);
+        assertTrue(encounter.getMonitor());
+        assertNotNull(encounter.getMeatKeywords());
+        assertEquals(List.of("bp monitored"), encounter.getMeatKeywords().get("MONITORING"));
+        assertEquals(List.of("metformin continued"), encounter.getMeatKeywords().get("TREATMENT"));
     }
 }

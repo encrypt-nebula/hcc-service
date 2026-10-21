@@ -10,23 +10,20 @@ import com.example.hcc.exceptions.ResourceNotFoundException;
 import com.example.hcc.entity.FileRecord;
 import com.example.hcc.entity.User;
 import com.example.hcc.entity.WorkUnit;
+import com.example.hcc.entity.MeatKeyword;
 import com.example.hcc.repository.AuditorResultRepository;
 import com.example.hcc.repository.CodingResultRepository;
 import com.example.hcc.repository.FileRepository;
+import com.example.hcc.repository.MeatKeywordRepository;
 import com.example.hcc.repository.WorkUnitRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +33,7 @@ public class AuditorResultService {
     private final CodingResultRepository codingResultRepository;
     private final FileRepository fileRepository;
     private final WorkUnitRepository workUnitRepository;
+    private final MeatKeywordRepository meatKeywordRepository;
 
     public AuditorResult saveOrUpdate(AuditorResult incoming) {
         if (incoming.getWorkUnit() != null && incoming.getWorkUnit().getId() != null) {
@@ -123,13 +121,30 @@ public class AuditorResultService {
                 .map(FileRecord::getId)
                 .toList();
 
-        Map<Long, List<CodingResult>> codingResultsByFile = new HashMap<>();
-        if (!fileIds.isEmpty()) {
-            List<CodingResult> allCodingResults = codingResultRepository.findByFileIdIn(fileIds);
-            codingResultsByFile = allCodingResults.stream()
-                    .collect(Collectors.groupingBy(cr -> cr.getFile().getId()));
+        List<CodingResult> allCodingResults = fileIds.isEmpty() ? List.of() : codingResultRepository.findByFileIdIn(fileIds);
+        Map<Long, List<CodingResult>> codingResultsByFile = allCodingResults.stream()
+                .collect(Collectors.groupingBy(cr -> cr.getFile().getId()));
+
+        List<Long> wuIds = Stream.concat(
+                groupedByFile.values().stream().flatMap(List::stream).map(ar -> ar.getWorkUnit() != null ? ar.getWorkUnit().getId() : null),
+                allCodingResults.stream().map(cr -> cr.getWorkUnit() != null ? cr.getWorkUnit().getId() : null)
+        ).filter(Objects::nonNull).distinct().toList();
+
+        Map<Long, Map<String, List<String>>> meatKeywordsByWorkUnit = new HashMap<>();
+        if (!wuIds.isEmpty()) {
+            List<MeatKeyword> keywords = meatKeywordRepository.findByWorkUnit_IdIn(wuIds);
+            meatKeywordsByWorkUnit = keywords.stream()
+                    .filter(k -> k.getWorkUnit() != null && k.getWorkUnit().getId() != null)
+                    .collect(Collectors.groupingBy(
+                            k -> k.getWorkUnit().getId(),
+                            Collectors.groupingBy(
+                                    MeatKeyword::getCategory,
+                                    Collectors.mapping(MeatKeyword::getKeyword, Collectors.toList())
+                            )
+                    ));
         }
 
+        final Map<Long, Map<String, List<String>>> finalMeatMap = meatKeywordsByWorkUnit;
         Map<Long, List<CodingResult>> finalCodingResultsByFile = codingResultsByFile;
 
         return files.stream()
@@ -159,27 +174,63 @@ public class AuditorResultService {
                         }
                     }
 
+                    Map<String, List<String>> fileMeat = new HashMap<>();
+
                     List<CodingResultMergeDTO> mergedList = crList.stream()
-                            .map(cr -> CodingResultMergeDTO.builder()
-                                    .id(cr.getId())
-                                    .dos(cr.getDos())
-                                    .manualIcdCode(cr.getManualIcdCode())
-                                    .aiIcdCode(cr.getAiIcdCode())
-                                    .extractedIcdCode(cr.getExtractedIcdCode())
-                                    .submittedIcdCode(cr.getSubmittedIcdCode())
-                                    .build())
+                            .map(cr -> {
+                                WorkUnit wu = cr.getWorkUnit();
+                                Map<String, List<String>> unitMeat = (wu != null && wu.getId() != null)
+                                        ? finalMeatMap.getOrDefault(wu.getId(), Collections.emptyMap())
+                                        : Collections.emptyMap();
+
+                                unitMeat.forEach((cat, kws) -> {
+                                    fileMeat.computeIfAbsent(cat, k -> new ArrayList<>()).addAll(kws);
+                                });
+
+                                return CodingResultMergeDTO.builder()
+                                        .id(cr.getId())
+                                        .dos(cr.getDos())
+                                        .manualIcdCode(cr.getManualIcdCode())
+                                        .aiIcdCode(cr.getAiIcdCode())
+                                        .extractedIcdCode(cr.getExtractedIcdCode())
+                                        .submittedIcdCode(cr.getSubmittedIcdCode())
+                                        .monitor(wu != null ? wu.getMonitor() : null)
+                                        .evaluate(wu != null ? wu.getEvaluate() : null)
+                                        .assessOrAddress(wu != null ? wu.getAssessOrAddress() : null)
+                                        .treat(wu != null ? wu.getTreat() : null)
+                                        .meatKeywords(unitMeat)
+                                        .build();
+                            })
                             .toList();
 
                     List<CodingResultMergeDTO> mergedCodingList = codingList.stream()
-                            .map(cr -> CodingResultMergeDTO.builder()
-                                    .id(cr.getId())
-                                    .dos(cr.getDos())
-                                    .manualIcdCode(cr.getManualIcdCode())
-                                    .aiIcdCode(cr.getAiIcdCode())
-                                    .extractedIcdCode(cr.getExtractedIcdCode())
-                                    .submittedIcdCode(cr.getSubmittedIcdCode())
-                                    .build())
+                            .map(cr -> {
+                                WorkUnit wu = cr.getWorkUnit();
+                                Map<String, List<String>> unitMeat = (wu != null && wu.getId() != null)
+                                        ? finalMeatMap.getOrDefault(wu.getId(), Collections.emptyMap())
+                                        : Collections.emptyMap();
+
+                                unitMeat.forEach((cat, kws) -> {
+                                    fileMeat.computeIfAbsent(cat, k -> new ArrayList<>()).addAll(kws);
+                                });
+
+                                return CodingResultMergeDTO.builder()
+                                        .id(cr.getId())
+                                        .dos(cr.getDos())
+                                        .manualIcdCode(cr.getManualIcdCode())
+                                        .aiIcdCode(cr.getAiIcdCode())
+                                        .extractedIcdCode(cr.getExtractedIcdCode())
+                                        .submittedIcdCode(cr.getSubmittedIcdCode())
+                                        .monitor(wu != null ? wu.getMonitor() : null)
+                                        .evaluate(wu != null ? wu.getEvaluate() : null)
+                                        .assessOrAddress(wu != null ? wu.getAssessOrAddress() : null)
+                                        .treat(wu != null ? wu.getTreat() : null)
+                                        .meatKeywords(unitMeat)
+                                        .build();
+                            })
                             .toList();
+
+                    fileMeat.replaceAll((cat, list) -> list.stream().distinct().toList());
 
                     return FileAuditorResultsDTO.builder()
                             .fileRecord(file)
@@ -187,6 +238,11 @@ public class AuditorResultService {
                             .auditor(auditor)
                             .createdAt(createdAt)
                             .hccScore(hccScore)
+                            .monitor(workUnit != null ? workUnit.getMonitor() : null)
+                            .evaluate(workUnit != null ? workUnit.getEvaluate() : null)
+                            .assessOrAddress(workUnit != null ? workUnit.getAssessOrAddress() : null)
+                            .treat(workUnit != null ? workUnit.getTreat() : null)
+                            .meatKeywords(fileMeat)
                             .auditorResults(mergedList)
                             .codingResults(mergedCodingList)
                             .build();

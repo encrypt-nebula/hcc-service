@@ -117,8 +117,26 @@ def merge_details(details_list):
         # Merge ICD Codes
         ext_codes = entry.get('extractedIcdCodes') or entry.get('extracted_icd_codes') or []
         ai_codes = entry.get('aiSuggestedIcdCode') or entry.get('ai_suggested_icd_code') or []
-        merged[dos]["extractedIcdCodes"].update(ext_codes)
-        merged[dos]["aiSuggestedIcdCode"].update(ai_codes)
+
+        for c in ext_codes:
+            val = c.get('code') if isinstance(c, dict) else str(c).strip()
+            if val: merged[dos]["extractedIcdCodes"].add(val)
+
+        for c in ai_codes:
+            val = c.get('code') if isinstance(c, dict) else str(c).strip()
+            if val: merged[dos]["aiSuggestedIcdCode"].add(val)
+
+        for item in (entry.get('icdCodes') or entry.get('icd_codes') or []):
+            if isinstance(item, dict):
+                code_val = item.get('code')
+                source = item.get('source', '')
+                if code_val:
+                    if source == 'explicit_icd':
+                        merged[dos]["extractedIcdCodes"].add(str(code_val).strip())
+                    else:
+                        merged[dos]["aiSuggestedIcdCode"].add(str(code_val).strip())
+            elif item:
+                merged[dos]["aiSuggestedIcdCode"].add(str(item).strip())
 
         # Merge MEAT (if any chunk finds it true, it's true)
         merged[dos]["monitor"] = merged[dos]["monitor"] or entry.get('monitor', False)

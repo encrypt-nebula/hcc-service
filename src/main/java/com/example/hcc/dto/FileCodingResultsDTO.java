@@ -8,6 +8,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -19,6 +20,11 @@ public class FileCodingResultsDTO {
     private User coder;        // common
     private LocalDateTime createdAt; // common
     private BigDecimal hccScore;
+    private Boolean monitor;
+    private Boolean evaluate;
+    private Boolean assessOrAddress;
+    private Boolean treat;
+    private Map<String, List<String>> meatKeywords;
     private List<CodingResultMergeDTO> codingResults; // different columns merged
     private List<CodingResultMergeDTO> auditorResults;
 }
